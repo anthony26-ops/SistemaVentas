@@ -85,6 +85,43 @@ public class ConexionPostgreSQL {
              Statement stmt = conexion.createStatement()) {
 
             // -- sección Cliente/Empleado -- (Cristofer)
+            // Tabla de personas (tabla base para herencia o datos comunes)
+stmt.executeUpdate(
+    "CREATE TABLE IF NOT EXISTS personas (" +
+    "id_persona SERIAL PRIMARY KEY, " +
+    "nombre VARCHAR(100) NOT NULL, " +
+    "apellido VARCHAR(100) NOT NULL, " +
+    "telefono VARCHAR(20), " +
+    "email VARCHAR(100)" +
+    ");"
+);
+
+// Tabla de clientes
+stmt.executeUpdate(
+    "CREATE TABLE IF NOT EXISTS clientes (" +
+    "id_cliente SERIAL PRIMARY KEY, " +
+    "id_persona INT REFERENCES personas(id_persona) ON DELETE CASCADE, " +
+    "nombre VARCHAR(100) NOT NULL, " +
+    "apellido VARCHAR(100) NOT NULL, " +
+    "telefono VARCHAR(20), " +
+    "email VARCHAR(100), " +
+    "nit VARCHAR(20)" +
+    ");"
+);
+
+// Tabla de empleados
+stmt.executeUpdate(
+    "CREATE TABLE IF NOT EXISTS empleados (" +
+    "id_empleado SERIAL PRIMARY KEY, " +
+    "id_persona INT REFERENCES personas(id_persona) ON DELETE CASCADE, " +
+    "nombre VARCHAR(100) NOT NULL, " +
+    "apellido VARCHAR(100) NOT NULL, " +
+    "telefono VARCHAR(20), " +
+    "email VARCHAR(100), " +
+    "puesto VARCHAR(50) NOT NULL, " +
+    "salario NUMERIC(10,2) NOT NULL" +
+    ");"
+);
             // -- sección Producto/Categoria/Inventario/Proveedor -- (André)
             // -- sección Factura/DetalleFactura -- (Carlos)
             // -- sección Pago -- (Oscar)

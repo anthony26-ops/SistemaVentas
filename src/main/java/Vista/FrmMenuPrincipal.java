@@ -4,10 +4,9 @@
  */
 package Vista;
 
-/**
- *
- * @author anthonyjolon
- */
+import javax.swing.JInternalFrame;
+import javax.swing.JFrame;
+
 public class FrmMenuPrincipal extends javax.swing.JFrame {
 
     private static final java.util.logging.Logger logger = java.util.logging.Logger.getLogger(FrmMenuPrincipal.class.getName());
@@ -17,6 +16,7 @@ public class FrmMenuPrincipal extends javax.swing.JFrame {
      */
     public FrmMenuPrincipal() {
         initComponents();
+        this.setExtendedState(MAXIMIZED_BOTH);
     }
 
     /**

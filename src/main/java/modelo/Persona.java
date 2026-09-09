@@ -4,10 +4,6 @@
  */
 package modelo;
 
-/**
- *
- * @author anthonyjolon
- */
 public abstract class Persona {
 
     private int id;
@@ -15,12 +11,17 @@ public abstract class Persona {
     private String apellido;
     private String telefono;
     private String direccion;
+    private String email;
+    
+    public Persona() {
+    }
 
     public Persona(int id, String nombre, String apellido, String telefono, String direccion) {
         this.id = id;
         this.nombre = nombre;
         this.apellido = apellido;
         this.telefono = telefono;
+        this.email = email;
         this.direccion = direccion;
     }
 
@@ -63,11 +64,19 @@ public abstract class Persona {
     public void setDireccion(String direccion) {
         this.direccion = direccion;
     }
+    public String getEmail() {
+        return email;
+    }
+
+    public void setEmail(String email) {
+        this.email = email;
+    }
 
     public String mostrarInformacion() {
         return "ID: " + this.id
                 + " | Nombre: " + this.nombre + " " + this.apellido
                 + " | Tel: " + this.telefono
-                + " | Dir: " + this.direccion;
+                + " | Dir: " + this.direccion
+                + " | Email: " + this.email;
     }
 }
