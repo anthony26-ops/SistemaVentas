@@ -18,7 +18,7 @@ public class ConexionPostgreSQL {
     private static final int PORT = 5432;
     private static final String DATABASE = "sistema_ventas";
     private static final String USER = "postgres";
-    private static final String PASSWORD = "postgres";
+    private static final String PASSWORD = "posgres";
     private static final String URL = "jdbc:postgresql://" + HOST + ":" + PORT + "/" + DATABASE;
     private static final String DRIVER = "org.postgresql.Driver";
 
