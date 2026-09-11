@@ -85,7 +85,7 @@ public class FrmProductos extends javax.swing.JFrame {
 
         jLabel1.setFont(new java.awt.Font("sansserif", 0, 16)); // NOI18N
         jLabel1.setText("ID:");
-        getContentPane().add(jLabel1, new org.netbeans.lib.awtextra.AbsoluteConstraints(20, 20, 20, 30));
+        getContentPane().add(jLabel1, new org.netbeans.lib.awtextra.AbsoluteConstraints(20, 20, 50, 30));
 
         txtId.setFont(new java.awt.Font("sansserif", 0, 14)); // NOI18N
         txtId.addActionListener(this::txtIdActionPerformed);
@@ -93,7 +93,7 @@ public class FrmProductos extends javax.swing.JFrame {
 
         jLabel2.setFont(new java.awt.Font("sansserif", 0, 16)); // NOI18N
         jLabel2.setText("Nombre:");
-        getContentPane().add(jLabel2, new org.netbeans.lib.awtextra.AbsoluteConstraints(20, 59, 70, 30));
+        getContentPane().add(jLabel2, new org.netbeans.lib.awtextra.AbsoluteConstraints(20, 59, 100, 30));
 
         txtNombre.setFont(new java.awt.Font("sansserif", 0, 14)); // NOI18N
         txtNombre.addActionListener(this::txtNombreActionPerformed);
@@ -101,7 +101,7 @@ public class FrmProductos extends javax.swing.JFrame {
 
         jLabel3.setFont(new java.awt.Font("sansserif", 0, 16)); // NOI18N
         jLabel3.setText("Descripción:");
-        getContentPane().add(jLabel3, new org.netbeans.lib.awtextra.AbsoluteConstraints(20, 100, -1, 30));
+        getContentPane().add(jLabel3, new org.netbeans.lib.awtextra.AbsoluteConstraints(20, 100, 120, 30));
 
         txtDescripcion.setFont(new java.awt.Font("sansserif", 0, 14)); // NOI18N
         txtDescripcion.addActionListener(this::txtDescripcionActionPerformed);
@@ -109,25 +109,25 @@ public class FrmProductos extends javax.swing.JFrame {
 
         jLabel4.setFont(new java.awt.Font("sansserif", 0, 16)); // NOI18N
         jLabel4.setText("Precio:");
-        getContentPane().add(jLabel4, new org.netbeans.lib.awtextra.AbsoluteConstraints(20, 139, -1, 30));
+        getContentPane().add(jLabel4, new org.netbeans.lib.awtextra.AbsoluteConstraints(20, 139, 80, 30));
 
         txtPrecio.setFont(new java.awt.Font("sansserif", 0, 14)); // NOI18N
         getContentPane().add(txtPrecio, new org.netbeans.lib.awtextra.AbsoluteConstraints(290, 140, 210, 30));
 
         jLabel5.setFont(new java.awt.Font("sansserif", 0, 16)); // NOI18N
         jLabel5.setText("Existencia:");
-        getContentPane().add(jLabel5, new org.netbeans.lib.awtextra.AbsoluteConstraints(20, 180, -1, 30));
+        getContentPane().add(jLabel5, new org.netbeans.lib.awtextra.AbsoluteConstraints(20, 180, 100, 30));
 
         txtExistencia.setFont(new java.awt.Font("sansserif", 0, 14)); // NOI18N
         getContentPane().add(txtExistencia, new org.netbeans.lib.awtextra.AbsoluteConstraints(290, 180, 210, 30));
 
         jLabel6.setFont(new java.awt.Font("sansserif", 0, 16)); // NOI18N
         jLabel6.setText("Categoría:");
-        getContentPane().add(jLabel6, new org.netbeans.lib.awtextra.AbsoluteConstraints(20, 220, 100, 30));
+        getContentPane().add(jLabel6, new org.netbeans.lib.awtextra.AbsoluteConstraints(20, 220, 130, 30));
 
         jLabel7.setFont(new java.awt.Font("sansserif", 0, 16)); // NOI18N
         jLabel7.setText("Proveedor:");
-        getContentPane().add(jLabel7, new org.netbeans.lib.awtextra.AbsoluteConstraints(20, 260, 80, 30));
+        getContentPane().add(jLabel7, new org.netbeans.lib.awtextra.AbsoluteConstraints(20, 260, 110, 30));
 
         btnGuardar.setText("Guardar");
         btnGuardar.addActionListener(this::btnGuardarActionPerformed);

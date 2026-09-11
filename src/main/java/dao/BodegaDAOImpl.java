@@ -17,20 +17,18 @@ import java.sql.*;
  */
 public class BodegaDAOImpl implements BodegaDAO{
     @Override
-    public void guardar(Bodega b){
-        String sql = "INSERT INTO ventas_bodegas (id_bodega, nombre, direccion, telefono) VALUES (?, ?, ?, ?)";
+    public void guardar(Bodega b) {
+        String sql = "INSERT INTO ventas_bodegas (nombre, direccion, telefono) VALUES (?, ?, ?)";
         try (Connection con = ConexionPostgreSQL.getConnection();
              PreparedStatement ps = con.prepareStatement(sql)) {
-            ps.setInt(1, b.getIdBodega());
-            ps.setString(2, b.getNombre());
-            ps.setString(3, b.getDireccion());
-            ps.setString(4, b.getTelefono());
+            ps.setString(1, b.getNombre());
+            ps.setString(2, b.getDireccion());
+            ps.setString(3, b.getTelefono());
             ps.executeUpdate();
         } catch (SQLException | ConexionException e) {
             e.printStackTrace();
         }
-    }
-    
+    }    
     @Override
     public List <Bodega> listar(){
         List<Bodega> lista = new ArrayList<>();
