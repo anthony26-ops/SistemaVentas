@@ -38,39 +38,19 @@ public class FrmMenuPrincipal extends javax.swing.JFrame {
         setTitle("Sistema de Ventas");
 
         btnClientes.setText("Clientes");
-        btnClientes.addActionListener(new java.awt.event.ActionListener() {
-            public void actionPerformed(java.awt.event.ActionEvent evt) {
-                btnClientesActionPerformed(evt);
-            }
-        });
+        btnClientes.addActionListener(this::btnClientesActionPerformed);
 
         btnEmpleados.setText("Empleados");
-        btnEmpleados.addActionListener(new java.awt.event.ActionListener() {
-            public void actionPerformed(java.awt.event.ActionEvent evt) {
-                btnEmpleadosActionPerformed(evt);
-            }
-        });
+        btnEmpleados.addActionListener(this::btnEmpleadosActionPerformed);
 
         btnProductos.setText("Productos");
-        btnProductos.addActionListener(new java.awt.event.ActionListener() {
-            public void actionPerformed(java.awt.event.ActionEvent evt) {
-                btnProductosActionPerformed(evt);
-            }
-        });
+        btnProductos.addActionListener(this::btnProductosActionPerformed);
 
         btnFacturacion.setText("Facturación");
-        btnFacturacion.addActionListener(new java.awt.event.ActionListener() {
-            public void actionPerformed(java.awt.event.ActionEvent evt) {
-                btnFacturacionActionPerformed(evt);
-            }
-        });
+        btnFacturacion.addActionListener(this::btnFacturacionActionPerformed);
 
         btnPago.setText("Pagos");
-        btnPago.addActionListener(new java.awt.event.ActionListener() {
-            public void actionPerformed(java.awt.event.ActionEvent evt) {
-                btnPagoActionPerformed(evt);
-            }
-        });
+        btnPago.addActionListener(this::btnPagoActionPerformed);
 
         javax.swing.GroupLayout layout = new javax.swing.GroupLayout(getContentPane());
         getContentPane().setLayout(layout);
@@ -99,10 +79,11 @@ public class FrmMenuPrincipal extends javax.swing.JFrame {
                 .addComponent(btnFacturacion)
                 .addGap(15, 15, 15)
                 .addComponent(btnPago)
-                .addContainerGap(30, Short.MAX_VALUE))
+                .addGap(0, 33, Short.MAX_VALUE))
         );
 
         pack();
+        setLocationRelativeTo(null);
     }// </editor-fold>//GEN-END:initComponents
 
     private void btnClientesActionPerformed(java.awt.event.ActionEvent evt) {
