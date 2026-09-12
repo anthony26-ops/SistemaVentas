@@ -1,112 +1,128 @@
 /*
  * Click nbfs://nbhost/SystemFileSystem/Templates/Licenses/license-default.txt to change this license
- * Click nbfs://nbhost/SystemFileSystem/Templates/GUIForms/JFrame.java to edit this template
  */
 package Vista;
 
-import javax.swing.JInternalFrame;
+import java.awt.BorderLayout;
+import java.awt.Color;
+import java.util.logging.Level;
+import java.util.logging.Logger;
+import javax.swing.BorderFactory;
+import javax.swing.JButton;
+import javax.swing.JDesktopPane;
 import javax.swing.JFrame;
+import javax.swing.JLabel;
+import javax.swing.JMenu;
+import javax.swing.JMenuBar;
+import javax.swing.JMenuItem;
+import javax.swing.JOptionPane;
+import javax.swing.JToolBar;
+import javax.swing.SwingConstants;
+import javax.swing.WindowConstants;
+import modelo.Usuario;
 
-public class FrmMenuPrincipal extends javax.swing.JFrame {
+/**
+ * Menú principal en estilo escritorio (menú + barra de herramientas +
+ * área de trabajo tipo JDesktopPane), armado dinámicamente según el rol
+ * del Usuario que inició sesión en FrmLogin. Al ser un diseño condicional
+ * (las opciones cambian por rol) se construye directamente en código en
+ * lugar de con el editor visual de NetBeans.
+ *
+ * @author anthonyjolon
+ */
+public class FrmMenuPrincipal extends JFrame {
 
-    private static final java.util.logging.Logger logger = java.util.logging.Logger.getLogger(FrmMenuPrincipal.class.getName());
+    private static final Logger logger = Logger.getLogger(FrmMenuPrincipal.class.getName());
 
-    /**
-     * Creates new form FrmMenuPrincipal
-     */
-    public FrmMenuPrincipal() {
+    private final Usuario usuarioActual;
+    private JDesktopPane desktopPane;
+
+    public FrmMenuPrincipal(Usuario usuarioActual) {
+        this.usuarioActual = usuarioActual;
         initComponents();
-        this.setExtendedState(MAXIMIZED_BOTH);
+        construirMenu();
+        construirBarraHerramientas();
+    }
+
+    private void initComponents() {
+        setDefaultCloseOperation(WindowConstants.EXIT_ON_CLOSE);
+        setTitle("Sistema de Ventas");
+        setSize(900, 600);
+        setLocationRelativeTo(null);
+
+        desktopPane = new JDesktopPane();
+        desktopPane.setBackground(new Color(45, 66, 96));
+
+        JLabel lblEstado = new JLabel(
+                " Usuario: " + usuarioActual.getNombreUsuario()
+                + "   |   Rol: " + usuarioActual.getRol());
+        lblEstado.setBorder(BorderFactory.createEmptyBorder(4, 8, 4, 8));
+
+        JLabel lblBienvenida = new JLabel("Sistema de Ventas", SwingConstants.CENTER);
+        lblBienvenida.setForeground(Color.WHITE);
+        lblBienvenida.setFont(lblBienvenida.getFont().deriveFont(28f));
+        lblBienvenida.setBounds(0, 0, 900, 500);
+        desktopPane.add(lblBienvenida);
+
+        getContentPane().setLayout(new BorderLayout());
+        getContentPane().add(desktopPane, BorderLayout.CENTER);
+        getContentPane().add(lblEstado, BorderLayout.SOUTH);
+    }
+
+    private void construirBarraHerramientas() {
+        JToolBar toolBar = new JToolBar();
+        toolBar.setFloatable(false);
+
+        JButton btnCerrarSesion = new JButton("Cerrar sesión");
+        btnCerrarSesion.addActionListener(e -> cerrarSesion());
+        toolBar.add(btnCerrarSesion);
+
+        getContentPane().add(toolBar, BorderLayout.NORTH);
+    }
+
+    private void construirMenu() {
+        JMenuBar menuBar = new JMenuBar();
+        String rol = usuarioActual.getRol();
+
+        JMenu menuModulos = new JMenu("Módulos");
+        agregarItemSiPuede(menuModulos, "Clientes", "Vista.FrmClientes", rol, "ADMIN", "CAJA");
+        agregarItemSiPuede(menuModulos, "Empleados", "Vista.FrmEmpleados", rol, "ADMIN");
+        agregarItemSiPuede(menuModulos, "Productos", "Vista.FrmProductos", rol, "ADMIN", "BODEGA");
+        agregarItemSiPuede(menuModulos, "Bodega / Inventario", "Vista.FrmBodegas", rol, "ADMIN", "BODEGA");
+        agregarItemSiPuede(menuModulos, "Hacer Pedido", "Vista.FrmOrdenVenta", rol, "ADMIN", "VENDEDOR");
+        agregarItemSiPuede(menuModulos, "Despacho", "Vista.FrmOrdenDespacho", rol, "ADMIN", "BODEGA");
+        agregarItemSiPuede(menuModulos, "Facturación", "Vista.FrmFacturacion", rol, "ADMIN", "CAJA");
+        agregarItemSiPuede(menuModulos, "Pagos", "Vista.FrmPago", rol, "ADMIN", "CAJA");
+        if (menuModulos.getItemCount() > 0) {
+            menuBar.add(menuModulos);
+        }
+
+        JMenu menuSesion = new JMenu("Sesión");
+        JMenuItem itemCerrar = new JMenuItem("Cerrar sesión");
+        itemCerrar.addActionListener(e -> cerrarSesion());
+        JMenuItem itemSalir = new JMenuItem("Salir");
+        itemSalir.addActionListener(e -> System.exit(0));
+        menuSesion.add(itemCerrar);
+        menuSesion.add(itemSalir);
+        menuBar.add(menuSesion);
+
+        setJMenuBar(menuBar);
     }
 
     /**
-     * This method is called from within the constructor to initialize the form.
-     * WARNING: Do NOT modify this code. The content of this method is always
-     * regenerated by the Form Editor.
+     * Agrega el item de menú solo si el rol del usuario actual está entre
+     * los roles permitidos para ese módulo.
      */
-    @SuppressWarnings("unchecked")
-    // <editor-fold defaultstate="collapsed" desc="Generated Code">//GEN-BEGIN:initComponents
-    private void initComponents() {
-
-        btnClientes = new javax.swing.JButton();
-        btnEmpleados = new javax.swing.JButton();
-        btnProductos = new javax.swing.JButton();
-        btnFacturacion = new javax.swing.JButton();
-        btnPago = new javax.swing.JButton();
-
-        setDefaultCloseOperation(javax.swing.WindowConstants.EXIT_ON_CLOSE);
-        setTitle("Sistema de Ventas");
-
-        btnClientes.setText("Clientes");
-        btnClientes.addActionListener(this::btnClientesActionPerformed);
-
-        btnEmpleados.setText("Empleados");
-        btnEmpleados.addActionListener(this::btnEmpleadosActionPerformed);
-
-        btnProductos.setText("Productos");
-        btnProductos.addActionListener(this::btnProductosActionPerformed);
-
-        btnFacturacion.setText("Facturación");
-        btnFacturacion.addActionListener(this::btnFacturacionActionPerformed);
-
-        btnPago.setText("Pagos");
-        btnPago.addActionListener(this::btnPagoActionPerformed);
-
-        javax.swing.GroupLayout layout = new javax.swing.GroupLayout(getContentPane());
-        getContentPane().setLayout(layout);
-        layout.setHorizontalGroup(
-            layout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
-            .addGroup(layout.createSequentialGroup()
-                .addGap(145, 145, 145)
-                .addGroup(layout.createParallelGroup(javax.swing.GroupLayout.Alignment.TRAILING)
-                    .addGroup(layout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
-                        .addComponent(btnPago)
-                        .addComponent(btnFacturacion)
-                        .addComponent(btnProductos)
-                        .addComponent(btnClientes))
-                    .addGroup(layout.createSequentialGroup()
-                        .addComponent(btnEmpleados)
-                        .addGap(6, 6, 6)))
-                .addGap(150, 150, 150))
-        );
-        layout.setVerticalGroup(
-            layout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
-            .addGroup(layout.createSequentialGroup()
-                .addGap(30, 30, 30)
-                .addComponent(btnClientes)
-                .addGap(18, 18, 18)
-                .addComponent(btnEmpleados)
-                .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.UNRELATED)
-                .addComponent(btnProductos)
-                .addGap(15, 15, 15)
-                .addComponent(btnFacturacion)
-                .addGap(15, 15, 15)
-                .addComponent(btnPago)
-                .addGap(0, 33, Short.MAX_VALUE))
-        );
-
-        pack();
-        setLocationRelativeTo(null);
-    }// </editor-fold>//GEN-END:initComponents
-
-    private void btnClientesActionPerformed(java.awt.event.ActionEvent evt) {
-        abrirVentana("Vista.FrmClientes", "Clientes");
-    }
-
-    private void btnEmpleadosActionPerformed(java.awt.event.ActionEvent evt) {
-        abrirVentana("Vista.FrmEmpleados", "Empleados");
-    }
-
-    private void btnProductosActionPerformed(java.awt.event.ActionEvent evt) {
-        abrirVentana("Vista.FrmProductos", "Productos");
-    }
-
-    private void btnFacturacionActionPerformed(java.awt.event.ActionEvent evt) {
-        abrirVentana("Vista.FrmFacturacion", "Facturación");
-    }
-
-    private void btnPagoActionPerformed(java.awt.event.ActionEvent evt) {
-        abrirVentana("Vista.FrmPago", "Pagos");
+    private void agregarItemSiPuede(JMenu menu, String texto, String claseFQN, String rolActual,
+            String... rolesPermitidos) {
+        for (String rolPermitido : rolesPermitidos) {
+            if (rolPermitido.equalsIgnoreCase(rolActual)) {
+                JMenuItem item = new JMenuItem(texto);
+                item.addActionListener(e -> abrirVentana(claseFQN, texto));
+                menu.add(item);
+                return;
+            }
+        }
     }
 
     /**
@@ -117,48 +133,20 @@ public class FrmMenuPrincipal extends javax.swing.JFrame {
     private void abrirVentana(String claseFQN, String nombreModulo) {
         try {
             Class<?> clazz = Class.forName(claseFQN);
-            javax.swing.JFrame frame = (javax.swing.JFrame) clazz.getDeclaredConstructor().newInstance();
+            JFrame frame = (JFrame) clazz.getDeclaredConstructor().newInstance();
             frame.setLocationRelativeTo(this);
             frame.setVisible(true);
         } catch (ReflectiveOperationException | ClassCastException ex) {
-            logger.log(java.util.logging.Level.WARNING, "No se pudo abrir el módulo " + nombreModulo, ex);
-            javax.swing.JOptionPane.showMessageDialog(this,
+            logger.log(Level.WARNING, "No se pudo abrir el módulo " + nombreModulo, ex);
+            JOptionPane.showMessageDialog(this,
                     "El módulo de " + nombreModulo + " aún no está disponible.",
                     "Sistema de Ventas",
-                    javax.swing.JOptionPane.INFORMATION_MESSAGE);
+                    JOptionPane.INFORMATION_MESSAGE);
         }
     }
 
-    /**
-     * @param args the command line arguments
-     */
-    public static void main(String args[]) {
-        /* Set the Nimbus look and feel */
-        //<editor-fold defaultstate="collapsed" desc=" Look and feel setting code (optional) ">
-        /* If Nimbus (introduced in Java SE 6) is not available, stay with the default look and feel.
-         * For details see http://download.oracle.com/javase/tutorial/uiswing/lookandfeel/plaf.html
-         */
-        try {
-            for (javax.swing.UIManager.LookAndFeelInfo info : javax.swing.UIManager.getInstalledLookAndFeels()) {
-                if ("Nimbus".equals(info.getName())) {
-                    javax.swing.UIManager.setLookAndFeel(info.getClassName());
-                    break;
-                }
-            }
-        } catch (ReflectiveOperationException | javax.swing.UnsupportedLookAndFeelException ex) {
-            logger.log(java.util.logging.Level.SEVERE, null, ex);
-        }
-        //</editor-fold>
-
-        /* Create and display the form */
-        java.awt.EventQueue.invokeLater(() -> new FrmMenuPrincipal().setVisible(true));
+    private void cerrarSesion() {
+        dispose();
+        java.awt.EventQueue.invokeLater(() -> new FrmLogin().setVisible(true));
     }
-
-    // Variables declaration - do not modify//GEN-BEGIN:variables
-    private javax.swing.JButton btnClientes;
-    private javax.swing.JButton btnEmpleados;
-    private javax.swing.JButton btnFacturacion;
-    private javax.swing.JButton btnPago;
-    private javax.swing.JButton btnProductos;
-    // End of variables declaration//GEN-END:variables
 }

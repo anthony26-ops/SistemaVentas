@@ -1,6 +1,6 @@
 package com.mycompany.sistemaventas;
 
-import Vista.FrmMenuPrincipal;
+import Vista.FrmLogin;
 import bd.ConexionException;
 import bd.ConexionPostgreSQL;
 import java.util.logging.Level;
@@ -17,6 +17,6 @@ public class SistemaVentas {
             logger.log(Level.SEVERE, "No se pudo inicializar la base de datos", ex);
         }
 
-        java.awt.EventQueue.invokeLater(() -> new FrmMenuPrincipal().setVisible(true));
+        java.awt.EventQueue.invokeLater(() -> new FrmLogin().setVisible(true));
     }
 }
