@@ -52,6 +52,7 @@ public class ConexionPostgreSQL {
     public static void inicializar() throws ConexionException {
         crearBaseDatosSiNoExiste();
         crearTablas();
+        sembrarUsuarioAdmin();
     }
 
     /**
@@ -265,6 +266,9 @@ public class ConexionPostgreSQL {
                     + ")");
 
             // -- sección Usuario -- (Anthony)
+            // NOTA: la FK apunta a "empleados(id_empleado)", que es la tabla
+            // que Cristofer realmente creó (ver nota de integración arriba),
+            // no a "ventas_empleados(id)" como usan Carlos/Oscar.
             stmt.executeUpdate(
                     "CREATE TABLE IF NOT EXISTS ventas_usuarios ("
                     + "id_usuario INT NOT NULL PRIMARY KEY,"
@@ -273,11 +277,44 @@ public class ConexionPostgreSQL {
                     + "contrasena_hash VARCHAR(255) NOT NULL,"
                     + "rol VARCHAR(30) NOT NULL,"
                     + "activo BOOLEAN NOT NULL DEFAULT TRUE,"
-                    + "CONSTRAINT fk_usuario_empleado FOREIGN KEY (empleado_id) REFERENCES ventas_empleados(id)"
+                    + "CONSTRAINT fk_usuario_empleado FOREIGN KEY (empleado_id) REFERENCES empleados(id_empleado)"
                     + ")");
 
         } catch (SQLException e) {
             throw new ConexionException("No se pudieron crear las tablas del sistema", e);
+        }
+    }
+
+    /**
+     * Crea un usuario administrador de prueba (usuario: admin,
+     * contraseña: admin123) la primera vez que se corre el programa, para
+     * poder probar el login mientras el resto de módulos no tiene todavía
+     * una pantalla de "crear usuario". No hace nada si ya existe.
+     */
+    private static void sembrarUsuarioAdmin() throws ConexionException {
+        try (Connection conexion = getConnection();
+                Statement stmt = conexion.createStatement()) {
+
+            stmt.executeUpdate(
+                    "INSERT INTO personas (id_persona, nombre, apellido, telefono, email) "
+                    + "VALUES (1, 'Admin', 'Sistema', '00000000', 'admin@sistemaventas.com') "
+                    + "ON CONFLICT (id_persona) DO NOTHING");
+
+            stmt.executeUpdate(
+                    "INSERT INTO empleados (id_empleado, id_persona, nombre, apellido, telefono, email, puesto, salario) "
+                    + "VALUES (1, 1, 'Admin', 'Sistema', '00000000', 'admin@sistemaventas.com', 'Administrador', 0) "
+                    + "ON CONFLICT (id_empleado) DO NOTHING");
+
+            String contrasenaHash = org.mindrot.jbcrypt.BCrypt.hashpw("admin123", org.mindrot.jbcrypt.BCrypt.gensalt());
+            try (java.sql.PreparedStatement ps = conexion.prepareStatement(
+                    "INSERT INTO ventas_usuarios (id_usuario, empleado_id, nombre_usuario, contrasena_hash, rol, activo) "
+                    + "VALUES (1, 1, 'admin', ?, 'ADMIN', TRUE) "
+                    + "ON CONFLICT (id_usuario) DO NOTHING")) {
+                ps.setString(1, contrasenaHash);
+                ps.executeUpdate();
+            }
+        } catch (SQLException e) {
+            throw new ConexionException("No se pudo crear el usuario admin de prueba", e);
         }
     }
 }
