@@ -6,7 +6,7 @@ package dao;
 import modelo.Producto;
 import modelo.Categoria;
 import modelo.Proveedor;
-import bd.ConexionPostgreSQL;
+import bd.ConexionMySQL;
 import bd.ConexionException;
 import java.util.List;
 import java.util.ArrayList;
@@ -20,7 +20,7 @@ public class ProductoDAOImpl implements ProductoDAO {
     @Override
     public void guardar(Producto p) {
         String sql = "INSERT INTO ventas_productos (id_producto, nombre, descripcion, precio, existencia, categoria_id, proveedor_id) VALUES (?, ?, ?, ?, ?, ?, ?)";
-        try (Connection con = ConexionPostgreSQL.getConnection();
+        try (Connection con = ConexionMySQL.getConnection();
              PreparedStatement ps = con.prepareStatement(sql)) {
             ps.setInt(1, p.getIdProducto());
             ps.setString(2, p.getNombre());
@@ -39,7 +39,7 @@ public class ProductoDAOImpl implements ProductoDAO {
     public List<Producto> listar() {
     List<Producto> lista = new ArrayList<>();
     String sql = "SELECT * FROM ventas_productos";
-    try (Connection con = ConexionPostgreSQL.getConnection();
+    try (Connection con = ConexionMySQL.getConnection();
          PreparedStatement ps = con.prepareStatement(sql);
          ResultSet rs = ps.executeQuery()) {
         while (rs.next()) {
@@ -66,7 +66,7 @@ public class ProductoDAOImpl implements ProductoDAO {
     @Override
     public Producto buscarPorId(int id) {
         String sql = "SELECT * FROM ventas_productos WHERE id_producto = ?";
-        try (Connection con = ConexionPostgreSQL.getConnection();
+        try (Connection con = ConexionMySQL.getConnection();
              PreparedStatement ps = con.prepareStatement(sql)) {
             ps.setInt(1, id);
             try (ResultSet rs = ps.executeQuery()) {
@@ -95,7 +95,7 @@ public class ProductoDAOImpl implements ProductoDAO {
     @Override
     public void actualizarExistencia(int idProducto, int nuevaExistencia) {
         String sql = "UPDATE ventas_productos SET existencia = ? WHERE id_producto = ?";
-        try (Connection con = ConexionPostgreSQL.getConnection();
+        try (Connection con = ConexionMySQL.getConnection();
              PreparedStatement ps = con.prepareStatement(sql)) {
             ps.setInt(1, nuevaExistencia);
             ps.setInt(2, idProducto);
@@ -108,7 +108,7 @@ public class ProductoDAOImpl implements ProductoDAO {
     public List<Categoria> listarCategorias() {
         List<Categoria> lista = new ArrayList<>();
         String sql = "SELECT * FROM ventas_categorias";
-        try (Connection con = ConexionPostgreSQL.getConnection();
+        try (Connection con = ConexionMySQL.getConnection();
              PreparedStatement ps = con.prepareStatement(sql);
              ResultSet rs = ps.executeQuery()) {
             while (rs.next()) {
@@ -127,7 +127,7 @@ public class ProductoDAOImpl implements ProductoDAO {
     public List<Proveedor> listarProveedores() {
         List<Proveedor> lista = new ArrayList<>();
         String sql = "SELECT * FROM ventas_proveedores";
-        try (Connection con = ConexionPostgreSQL.getConnection();
+        try (Connection con = ConexionMySQL.getConnection();
              PreparedStatement ps = con.prepareStatement(sql);
              ResultSet rs = ps.executeQuery()) {
             while (rs.next()) {

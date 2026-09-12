@@ -1,6 +1,6 @@
 package dao.impl;
 
-import bd.ConexionPostgreSQL;
+import bd.ConexionMySQL;
 import dao.OrdenVentaDAO;
 import java.sql.Connection;
 import java.sql.PreparedStatement;
@@ -19,7 +19,7 @@ public class OrdenVentaDAOImpl implements OrdenVentaDAO {
         PreparedStatement ps = null;
         
         try {
-            con = ConexionPostgreSQL.getConnection();
+            con = ConexionMySQL.getConnection();
             ps = con.prepareStatement(sql);
             
             // ps.executeUpdate();

@@ -1,7 +1,7 @@
 package dao;
 
 import bd.ConexionException;
-import bd.ConexionPostgreSQL;
+import bd.ConexionMySQL;
 import java.sql.Connection;
 import java.sql.PreparedStatement;
 import java.sql.ResultSet;
@@ -20,14 +20,14 @@ public class UsuarioDAOImpl implements UsuarioDAO {
         String sql = "INSERT INTO ventas_usuarios "
                 + "(id_usuario, empleado_id, nombre_usuario, contrasena_hash, rol, activo) "
                 + "VALUES (?, ?, ?, ?, ?, ?) "
-                + "ON CONFLICT (id_usuario) DO UPDATE SET "
-                + "empleado_id = EXCLUDED.empleado_id, "
-                + "nombre_usuario = EXCLUDED.nombre_usuario, "
-                + "contrasena_hash = EXCLUDED.contrasena_hash, "
-                + "rol = EXCLUDED.rol, "
-                + "activo = EXCLUDED.activo";
+                + "ON DUPLICATE KEY UPDATE "
+                + "empleado_id = VALUES(empleado_id), "
+                + "nombre_usuario = VALUES(nombre_usuario), "
+                + "contrasena_hash = VALUES(contrasena_hash), "
+                + "rol = VALUES(rol), "
+                + "activo = VALUES(activo)";
 
-        try (Connection conexion = ConexionPostgreSQL.getConnection();
+        try (Connection conexion = ConexionMySQL.getConnection();
                 PreparedStatement ps = conexion.prepareStatement(sql)) {
 
             ps.setInt(1, u.getIdUsuario());
@@ -47,7 +47,7 @@ public class UsuarioDAOImpl implements UsuarioDAO {
         String sql = "SELECT id_usuario, empleado_id, nombre_usuario, contrasena_hash, rol, activo "
                 + "FROM ventas_usuarios WHERE nombre_usuario = ?";
 
-        try (Connection conexion = ConexionPostgreSQL.getConnection();
+        try (Connection conexion = ConexionMySQL.getConnection();
                 PreparedStatement ps = conexion.prepareStatement(sql)) {
 
             ps.setString(1, nombreUsuario);

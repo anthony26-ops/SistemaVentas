@@ -4,7 +4,7 @@
  */
     package dao.impl;
 
-import bd.ConexionPostgreSQL;
+import bd.ConexionMySQL;
 import bd.ConexionException; // Importante
 import dao.ClienteDAO;
 import modelo.Cliente;
@@ -17,7 +17,7 @@ public class ClienteDAOImpl implements ClienteDAO {
     @Override
     public boolean insertar(Cliente cliente) {
         String sql = "INSERT INTO clientes (nombre, apellido, telefono, email, nit) VALUES (?, ?, ?, ?, ?)";
-        try (Connection cn = ConexionPostgreSQL.getConnection(); // Cambio a getConnection()
+        try (Connection cn = ConexionMySQL.getConnection(); // Cambio a getConnection()
              PreparedStatement ps = cn.prepareStatement(sql)) {
             ps.setString(1, cliente.getNombre());
             ps.setString(2, cliente.getApellido());
@@ -34,7 +34,7 @@ public class ClienteDAOImpl implements ClienteDAO {
     @Override
     public boolean actualizar(Cliente cliente) {
         String sql = "UPDATE clientes SET nombre=?, apellido=?, telefono=?, email=?, nit=? WHERE id_cliente=?";
-        try (Connection cn = ConexionPostgreSQL.getConnection();
+        try (Connection cn = ConexionMySQL.getConnection();
              PreparedStatement ps = cn.prepareStatement(sql)) {
             ps.setString(1, cliente.getNombre());
             ps.setString(2, cliente.getApellido());
@@ -52,7 +52,7 @@ public class ClienteDAOImpl implements ClienteDAO {
     @Override
     public boolean eliminar(int idCliente) {
         String sql = "DELETE FROM clientes WHERE id_cliente=?";
-        try (Connection cn = ConexionPostgreSQL.getConnection();
+        try (Connection cn = ConexionMySQL.getConnection();
              PreparedStatement ps = cn.prepareStatement(sql)) {
             ps.setInt(1, idCliente);
             return ps.executeUpdate() > 0;
@@ -65,7 +65,7 @@ public class ClienteDAOImpl implements ClienteDAO {
     @Override
     public Cliente obtenerPorId(int idCliente) {
         String sql = "SELECT * FROM clientes WHERE id_cliente=?";
-        try (Connection cn = ConexionPostgreSQL.getConnection();
+        try (Connection cn = ConexionMySQL.getConnection();
              PreparedStatement ps = cn.prepareStatement(sql)) {
             ps.setInt(1, idCliente);
             try (ResultSet rs = ps.executeQuery()) {
@@ -91,7 +91,7 @@ public class ClienteDAOImpl implements ClienteDAO {
     public List<Cliente> listarTodos() {
         List<Cliente> lista = new ArrayList<>();
         String sql = "SELECT * FROM clientes";
-        try (Connection cn = ConexionPostgreSQL.getConnection();
+        try (Connection cn = ConexionMySQL.getConnection();
              Statement st = cn.createStatement();
              ResultSet rs = st.executeQuery(sql)) {
             while (rs.next()) {

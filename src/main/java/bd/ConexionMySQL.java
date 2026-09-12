@@ -2,34 +2,34 @@ package bd;
 
 import java.sql.Connection;
 import java.sql.DriverManager;
-import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.sql.Statement;
 
 /**
- * Maneja la conexión a PostgreSQL y la creación inicial de la base de datos
+ * Maneja la conexión a MySQL y la creación inicial de la base de datos
  * "sistema_ventas" y sus tablas.
  *
  * @author anthonyjolon
  */
-public class ConexionPostgreSQL {
+public class ConexionMySQL {
 
     private static final String HOST = "127.0.0.1";
-    private static final int PORT = 5432;
+    private static final int PORT = 3306;
     private static final String DATABASE = "sistema_ventas";
-    private static final String USER = "postgres";
-    private static final String PASSWORD = "postgres";
-    private static final String URL = "jdbc:postgresql://" + HOST + ":" + PORT + "/" + DATABASE;
-    private static final String DRIVER = "org.postgresql.Driver";
+    private static final String USER = "root";
+    private static final String PASSWORD = "";
+    private static final String URL = "jdbc:mysql://" + HOST + ":" + PORT + "/" + DATABASE
+            + "?useSSL=false&allowPublicKeyRetrieval=true&serverTimezone=UTC";
+    private static final String DRIVER = "com.mysql.cj.jdbc.Driver";
 
-    private ConexionPostgreSQL() {
+    private ConexionMySQL() {
     }
 
     static {
         try {
             Class.forName(DRIVER);
         } catch (ClassNotFoundException e) {
-            throw new RuntimeException("No se encontró el driver de PostgreSQL", e);
+            throw new RuntimeException("No se encontró el driver de MySQL", e);
         }
     }
 
@@ -56,22 +56,18 @@ public class ConexionPostgreSQL {
     }
 
     /**
-     * PostgreSQL no soporta "CREATE DATABASE IF NOT EXISTS", así que hay que
-     * verificar primero si ya existe consultando el catálogo, conectándose
-     * a la base administrativa "postgres" (que siempre existe).
+     * A diferencia de PostgreSQL, MySQL sí soporta
+     * "CREATE DATABASE IF NOT EXISTS", así que no hace falta conectarse
+     * primero a una base administrativa aparte.
      */
     private static void crearBaseDatosSiNoExiste() throws ConexionException {
-        String urlPostgres = "jdbc:postgresql://" + HOST + ":" + PORT + "/postgres";
+        String urlServidor = "jdbc:mysql://" + HOST + ":" + PORT
+                + "/?useSSL=false&allowPublicKeyRetrieval=true&serverTimezone=UTC";
 
-        try (Connection conexion = DriverManager.getConnection(urlPostgres, USER, PASSWORD);
-             Statement stmt = conexion.createStatement()) {
+        try (Connection conexion = DriverManager.getConnection(urlServidor, USER, PASSWORD);
+                Statement stmt = conexion.createStatement()) {
 
-            try (ResultSet rs = stmt.executeQuery(
-                    "SELECT 1 FROM pg_database WHERE datname = '" + DATABASE + "'")) {
-                if (!rs.next()) {
-                    stmt.executeUpdate("CREATE DATABASE " + DATABASE);
-                }
-            }
+            stmt.executeUpdate("CREATE DATABASE IF NOT EXISTS " + DATABASE);
         } catch (SQLException e) {
             throw new ConexionException("No se pudo verificar/crear la base " + DATABASE, e);
         }
@@ -81,55 +77,60 @@ public class ConexionPostgreSQL {
      * Crea (si no existen) todas las tablas del sistema. Cada compañero
      * agrega el CREATE TABLE de su módulo en la sección correspondiente.
      * IMPORTANTE: la tabla de Usuario va al final porque tiene una llave
-     * foránea hacia ventas_empleados, así que esa tabla debe existir primero.
+     * foránea hacia empleados, así que esa tabla debe existir primero.
      *
-     * NOTA DE INTEGRACIÓN (Anthony): las tablas de este método usan la
-     * convención "ventas_*" con columna "id" que define el documento base
-     * (ventas_clientes, ventas_empleados, etc.), porque es la que ya usan
-     * los módulos de André, Carlos y Oscar. El módulo de Cliente/Empleado
-     * de Cristofer, en cambio, quedó implementado con sus propias tablas
-     * "personas"/"clientes"/"empleados" (nombres y llaves distintas). Las
-     * dejo tal cual las escribió él, pero OJO: las llaves foráneas de
-     * OrdenVenta, Factura, OrdenDespacho y Usuario apuntan a
-     * ventas_clientes/ventas_empleados, que con el esquema actual de
-     * Cristofer NO EXISTEN. Hay que resolverlo en equipo (ver resumen).
+     * NOTA DE INTEGRACIÓN (Anthony): las tablas de Producto/Bodega (André),
+     * Factura/OrdenVenta (Carlos), Pago/OrdenDespacho (Oscar) y Usuario
+     * (Anthony) usan la convención "ventas_*" con columna "id" que define
+     * el documento base. El módulo de Cliente/Empleado de Cristofer, en
+     * cambio, quedó implementado con sus propias tablas
+     * "personas"/"clientes"/"empleados" (nombres y llaves distintas, con
+     * id_cliente/id_empleado autoincrementales). El documento original
+     * asumía que las FK de OrdenVenta/Factura/OrdenDespacho/Usuario
+     * apuntarían a "ventas_clientes(id)"/"ventas_empleados(id)", pero esas
+     * tablas no existen: por eso esas FK apuntan aquí a clientes(id_cliente)
+     * y empleados(id_empleado), las tablas reales de Cristofer. Si él llega
+     * a renombrar su esquema para alinearlo al documento, hay que actualizar
+     * estas referencias también.
      */
     private static void crearTablas() throws ConexionException {
         try (Connection conexion = getConnection();
-             Statement stmt = conexion.createStatement()) {
+                Statement stmt = conexion.createStatement()) {
 
             // -- sección Cliente/Empleado -- (Cristofer)
             stmt.executeUpdate(
                     "CREATE TABLE IF NOT EXISTS personas ("
-                    + "id_persona SERIAL PRIMARY KEY, "
+                    + "id_persona INT AUTO_INCREMENT PRIMARY KEY, "
                     + "nombre VARCHAR(100) NOT NULL, "
                     + "apellido VARCHAR(100) NOT NULL, "
                     + "telefono VARCHAR(20), "
                     + "email VARCHAR(100)"
-                    + ")");
+                    + ") ENGINE=InnoDB");
 
             stmt.executeUpdate(
                     "CREATE TABLE IF NOT EXISTS clientes ("
-                    + "id_cliente SERIAL PRIMARY KEY, "
-                    + "id_persona INT REFERENCES personas(id_persona) ON DELETE CASCADE, "
+                    + "id_cliente INT AUTO_INCREMENT PRIMARY KEY, "
+                    + "id_persona INT, "
                     + "nombre VARCHAR(100) NOT NULL, "
                     + "apellido VARCHAR(100) NOT NULL, "
                     + "telefono VARCHAR(20), "
                     + "email VARCHAR(100), "
-                    + "nit VARCHAR(20)"
-                    + ")");
+                    + "nit VARCHAR(20), "
+                    + "CONSTRAINT fk_cliente_persona FOREIGN KEY (id_persona) REFERENCES personas(id_persona) ON DELETE CASCADE"
+                    + ") ENGINE=InnoDB");
 
             stmt.executeUpdate(
                     "CREATE TABLE IF NOT EXISTS empleados ("
-                    + "id_empleado SERIAL PRIMARY KEY, "
-                    + "id_persona INT REFERENCES personas(id_persona) ON DELETE CASCADE, "
+                    + "id_empleado INT AUTO_INCREMENT PRIMARY KEY, "
+                    + "id_persona INT, "
                     + "nombre VARCHAR(100) NOT NULL, "
                     + "apellido VARCHAR(100) NOT NULL, "
                     + "telefono VARCHAR(20), "
                     + "email VARCHAR(100), "
                     + "puesto VARCHAR(50) NOT NULL, "
-                    + "salario NUMERIC(10,2) NOT NULL"
-                    + ")");
+                    + "salario DECIMAL(10,2) NOT NULL, "
+                    + "CONSTRAINT fk_empleado_persona FOREIGN KEY (id_persona) REFERENCES personas(id_persona) ON DELETE CASCADE"
+                    + ") ENGINE=InnoDB");
 
             // -- sección Producto/Categoria/Inventario/Proveedor/Bodega -- (André)
             stmt.executeUpdate(
@@ -137,7 +138,7 @@ public class ConexionPostgreSQL {
                     + "id_categoria INT NOT NULL PRIMARY KEY,"
                     + "nombre VARCHAR(100) NOT NULL,"
                     + "descripcion VARCHAR(200)"
-                    + ")");
+                    + ") ENGINE=InnoDB");
 
             stmt.executeUpdate(
                     "CREATE TABLE IF NOT EXISTS ventas_proveedores ("
@@ -145,7 +146,7 @@ public class ConexionPostgreSQL {
                     + "nombre_empresa VARCHAR(150) NOT NULL,"
                     + "telefono VARCHAR(50),"
                     + "direccion VARCHAR(200)"
-                    + ")");
+                    + ") ENGINE=InnoDB");
 
             stmt.executeUpdate(
                     "CREATE TABLE IF NOT EXISTS ventas_productos ("
@@ -158,7 +159,7 @@ public class ConexionPostgreSQL {
                     + "proveedor_id INT,"
                     + "CONSTRAINT fk_producto_categoria FOREIGN KEY (categoria_id) REFERENCES ventas_categorias(id_categoria),"
                     + "CONSTRAINT fk_producto_proveedor FOREIGN KEY (proveedor_id) REFERENCES ventas_proveedores(id_proveedor)"
-                    + ")");
+                    + ") ENGINE=InnoDB");
 
             stmt.executeUpdate(
                     "CREATE TABLE IF NOT EXISTS ventas_bodegas ("
@@ -166,7 +167,7 @@ public class ConexionPostgreSQL {
                     + "nombre VARCHAR(100) NOT NULL,"
                     + "direccion VARCHAR(200),"
                     + "telefono VARCHAR(50)"
-                    + ")");
+                    + ") ENGINE=InnoDB");
 
             stmt.executeUpdate(
                     "CREATE TABLE IF NOT EXISTS ventas_inventario ("
@@ -176,11 +177,13 @@ public class ConexionPostgreSQL {
                     + "cantidad_disponible INT NOT NULL,"
                     + "CONSTRAINT fk_inventario_producto FOREIGN KEY (producto_id) REFERENCES ventas_productos(id_producto),"
                     + "CONSTRAINT fk_inventario_bodega FOREIGN KEY (bodega_id) REFERENCES ventas_bodegas(id_bodega)"
-                    + ")");
+                    + ") ENGINE=InnoDB");
 
             // -- sección Factura/DetalleFactura/OrdenVenta/DetalleOrdenVenta -- (Carlos)
-            // OJO: ventas_clientes / ventas_empleados no existen todavía con el
-            // esquema real de Cristofer (ver nota de integración arriba).
+            // Las FK de cliente/vendedor apuntan a las tablas reales que creó
+            // Cristofer (clientes/empleados), no a ventas_clientes/
+            // ventas_empleados como decía el documento original, porque esas
+            // no existen (ver nota de integración arriba).
             stmt.executeUpdate(
                     "CREATE TABLE IF NOT EXISTS ventas_ordenes_venta ("
                     + "id_orden_venta INT NOT NULL PRIMARY KEY,"
@@ -188,20 +191,20 @@ public class ConexionPostgreSQL {
                     + "cliente_id INT NOT NULL,"
                     + "vendedor_id INT NOT NULL,"
                     + "estado VARCHAR(30) NOT NULL DEFAULT 'Pendiente',"
-                    + "CONSTRAINT fk_ov_cliente FOREIGN KEY (cliente_id) REFERENCES ventas_clientes(id),"
-                    + "CONSTRAINT fk_ov_vendedor FOREIGN KEY (vendedor_id) REFERENCES ventas_empleados(id)"
-                    + ")");
+                    + "CONSTRAINT fk_ov_cliente FOREIGN KEY (cliente_id) REFERENCES clientes(id_cliente),"
+                    + "CONSTRAINT fk_ov_vendedor FOREIGN KEY (vendedor_id) REFERENCES empleados(id_empleado)"
+                    + ") ENGINE=InnoDB");
 
             stmt.executeUpdate(
                     "CREATE TABLE IF NOT EXISTS ventas_orden_venta_detalles ("
-                    + "id_detalle BIGSERIAL PRIMARY KEY,"
+                    + "id_detalle BIGINT AUTO_INCREMENT PRIMARY KEY,"
                     + "orden_venta_id INT NOT NULL,"
                     + "producto_id INT NOT NULL,"
                     + "cantidad_solicitada INT NOT NULL,"
                     + "precio_unitario DECIMAL(12,2) NOT NULL,"
                     + "CONSTRAINT fk_ovd_orden FOREIGN KEY (orden_venta_id) REFERENCES ventas_ordenes_venta(id_orden_venta) ON DELETE CASCADE,"
                     + "CONSTRAINT fk_ovd_producto FOREIGN KEY (producto_id) REFERENCES ventas_productos(id_producto)"
-                    + ")");
+                    + ") ENGINE=InnoDB");
 
             stmt.executeUpdate(
                     "CREATE TABLE IF NOT EXISTS ventas_facturas ("
@@ -215,20 +218,20 @@ public class ConexionPostgreSQL {
                     + "total DECIMAL(12,2) NOT NULL,"
                     + "estado VARCHAR(30) NOT NULL DEFAULT 'Pendiente',"
                     + "CONSTRAINT fk_factura_orden FOREIGN KEY (orden_venta_id) REFERENCES ventas_ordenes_venta(id_orden_venta),"
-                    + "CONSTRAINT fk_factura_cliente FOREIGN KEY (cliente_id) REFERENCES ventas_clientes(id),"
-                    + "CONSTRAINT fk_factura_empleado FOREIGN KEY (empleado_id) REFERENCES ventas_empleados(id)"
-                    + ")");
+                    + "CONSTRAINT fk_factura_cliente FOREIGN KEY (cliente_id) REFERENCES clientes(id_cliente),"
+                    + "CONSTRAINT fk_factura_empleado FOREIGN KEY (empleado_id) REFERENCES empleados(id_empleado)"
+                    + ") ENGINE=InnoDB");
 
             stmt.executeUpdate(
                     "CREATE TABLE IF NOT EXISTS ventas_factura_detalles ("
-                    + "id_detalle BIGSERIAL PRIMARY KEY,"
+                    + "id_detalle BIGINT AUTO_INCREMENT PRIMARY KEY,"
                     + "factura_id INT NOT NULL,"
                     + "producto_id INT NOT NULL,"
                     + "cantidad INT NOT NULL,"
                     + "precio_unitario DECIMAL(12,2) NOT NULL,"
                     + "CONSTRAINT fk_detalle_factura FOREIGN KEY (factura_id) REFERENCES ventas_facturas(id_factura) ON DELETE CASCADE,"
                     + "CONSTRAINT fk_detalle_producto FOREIGN KEY (producto_id) REFERENCES ventas_productos(id_producto)"
-                    + ")");
+                    + ") ENGINE=InnoDB");
 
             // -- sección Pago/OrdenDespacho/DetalleOrdenDespacho -- (Oscar)
             stmt.executeUpdate(
@@ -241,18 +244,18 @@ public class ConexionPostgreSQL {
                     + "estado VARCHAR(30) NOT NULL DEFAULT 'Pendiente',"
                     + "CONSTRAINT fk_od_orden FOREIGN KEY (orden_venta_id) REFERENCES ventas_ordenes_venta(id_orden_venta),"
                     + "CONSTRAINT fk_od_bodega FOREIGN KEY (bodega_id) REFERENCES ventas_bodegas(id_bodega),"
-                    + "CONSTRAINT fk_od_empleado FOREIGN KEY (empleado_id) REFERENCES ventas_empleados(id)"
-                    + ")");
+                    + "CONSTRAINT fk_od_empleado FOREIGN KEY (empleado_id) REFERENCES empleados(id_empleado)"
+                    + ") ENGINE=InnoDB");
 
             stmt.executeUpdate(
                     "CREATE TABLE IF NOT EXISTS ventas_orden_despacho_detalles ("
-                    + "id_detalle BIGSERIAL PRIMARY KEY,"
+                    + "id_detalle BIGINT AUTO_INCREMENT PRIMARY KEY,"
                     + "orden_despacho_id INT NOT NULL,"
                     + "producto_id INT NOT NULL,"
                     + "cantidad_despachada INT NOT NULL,"
                     + "CONSTRAINT fk_odd_orden FOREIGN KEY (orden_despacho_id) REFERENCES ventas_ordenes_despacho(id_orden_despacho) ON DELETE CASCADE,"
                     + "CONSTRAINT fk_odd_producto FOREIGN KEY (producto_id) REFERENCES ventas_productos(id_producto)"
-                    + ")");
+                    + ") ENGINE=InnoDB");
 
             stmt.executeUpdate(
                     "CREATE TABLE IF NOT EXISTS ventas_pagos ("
@@ -263,7 +266,7 @@ public class ConexionPostgreSQL {
                     + "tipo_metodo VARCHAR(20) NOT NULL,"
                     + "detalle_metodo VARCHAR(150),"
                     + "CONSTRAINT fk_pago_factura FOREIGN KEY (factura_id) REFERENCES ventas_facturas(id_factura)"
-                    + ")");
+                    + ") ENGINE=InnoDB");
 
             // -- sección Usuario -- (Anthony)
             // NOTA: la FK apunta a "empleados(id_empleado)", que es la tabla
@@ -278,7 +281,7 @@ public class ConexionPostgreSQL {
                     + "rol VARCHAR(30) NOT NULL,"
                     + "activo BOOLEAN NOT NULL DEFAULT TRUE,"
                     + "CONSTRAINT fk_usuario_empleado FOREIGN KEY (empleado_id) REFERENCES empleados(id_empleado)"
-                    + ")");
+                    + ") ENGINE=InnoDB");
 
         } catch (SQLException e) {
             throw new ConexionException("No se pudieron crear las tablas del sistema", e);
@@ -296,20 +299,17 @@ public class ConexionPostgreSQL {
                 Statement stmt = conexion.createStatement()) {
 
             stmt.executeUpdate(
-                    "INSERT INTO personas (id_persona, nombre, apellido, telefono, email) "
-                    + "VALUES (1, 'Admin', 'Sistema', '00000000', 'admin@sistemaventas.com') "
-                    + "ON CONFLICT (id_persona) DO NOTHING");
+                    "INSERT IGNORE INTO personas (id_persona, nombre, apellido, telefono, email) "
+                    + "VALUES (1, 'Admin', 'Sistema', '00000000', 'admin@sistemaventas.com')");
 
             stmt.executeUpdate(
-                    "INSERT INTO empleados (id_empleado, id_persona, nombre, apellido, telefono, email, puesto, salario) "
-                    + "VALUES (1, 1, 'Admin', 'Sistema', '00000000', 'admin@sistemaventas.com', 'Administrador', 0) "
-                    + "ON CONFLICT (id_empleado) DO NOTHING");
+                    "INSERT IGNORE INTO empleados (id_empleado, id_persona, nombre, apellido, telefono, email, puesto, salario) "
+                    + "VALUES (1, 1, 'Admin', 'Sistema', '00000000', 'admin@sistemaventas.com', 'Administrador', 0)");
 
             String contrasenaHash = org.mindrot.jbcrypt.BCrypt.hashpw("admin123", org.mindrot.jbcrypt.BCrypt.gensalt());
             try (java.sql.PreparedStatement ps = conexion.prepareStatement(
-                    "INSERT INTO ventas_usuarios (id_usuario, empleado_id, nombre_usuario, contrasena_hash, rol, activo) "
-                    + "VALUES (1, 1, 'admin', ?, 'ADMIN', TRUE) "
-                    + "ON CONFLICT (id_usuario) DO NOTHING")) {
+                    "INSERT IGNORE INTO ventas_usuarios (id_usuario, empleado_id, nombre_usuario, contrasena_hash, rol, activo) "
+                    + "VALUES (1, 1, 'admin', ?, 'ADMIN', TRUE)")) {
                 ps.setString(1, contrasenaHash);
                 ps.executeUpdate();
             }

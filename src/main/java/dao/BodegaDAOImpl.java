@@ -6,7 +6,7 @@ package dao;
 
 import modelo.Bodega;
 import bd.ConexionException;
-import bd.ConexionPostgreSQL;
+import bd.ConexionMySQL;
 import java.util.List;
 import java.util.ArrayList;
 import java.sql.*;
@@ -19,7 +19,7 @@ public class BodegaDAOImpl implements BodegaDAO{
     @Override
     public void guardar(Bodega b) {
         String sql = "INSERT INTO ventas_bodegas (nombre, direccion, telefono) VALUES (?, ?, ?)";
-        try (Connection con = ConexionPostgreSQL.getConnection();
+        try (Connection con = ConexionMySQL.getConnection();
              PreparedStatement ps = con.prepareStatement(sql)) {
             ps.setString(1, b.getNombre());
             ps.setString(2, b.getDireccion());
@@ -33,7 +33,7 @@ public class BodegaDAOImpl implements BodegaDAO{
     public List <Bodega> listar(){
         List<Bodega> lista = new ArrayList<>();
         String sql = "SELECT * FROM ventas_bodegas";
-        try (Connection con = ConexionPostgreSQL.getConnection();
+        try (Connection con = ConexionMySQL.getConnection();
          PreparedStatement ps = con.prepareStatement(sql);
          ResultSet rs = ps.executeQuery()) {
             while (rs.next()) {

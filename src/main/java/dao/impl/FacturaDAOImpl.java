@@ -1,6 +1,6 @@
 package dao.impl;
 
-import bd.ConexionPostgreSQL;
+import bd.ConexionMySQL;
 import dao.FacturaDAO;
 import java.sql.Connection;
 import java.sql.PreparedStatement;
@@ -19,7 +19,7 @@ public class FacturaDAOImpl implements FacturaDAO {
         PreparedStatement ps = null;
         
         try {
-            con = ConexionPostgreSQL.getConnection(); 
+            con = ConexionMySQL.getConnection(); 
             ps = con.prepareStatement(sql);
             // Aquí luego mapearemos los datos: ps.setDate(1, ...), etc.
             

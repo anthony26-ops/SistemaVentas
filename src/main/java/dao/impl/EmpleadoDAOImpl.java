@@ -4,7 +4,7 @@
  */
 package dao.impl;
 
-import bd.ConexionPostgreSQL;
+import bd.ConexionMySQL;
 import bd.ConexionException;
 import dao.EmpleadoDAO;
 import modelo.Empleado;
@@ -17,7 +17,7 @@ public class EmpleadoDAOImpl implements EmpleadoDAO {
     @Override
     public boolean insertar(Empleado empleado) {
         String sql = "INSERT INTO empleados (nombre, apellido, telefono, email, puesto, salario) VALUES (?, ?, ?, ?, ?, ?)";
-        try (Connection cn = ConexionPostgreSQL.getConnection();
+        try (Connection cn = ConexionMySQL.getConnection();
              PreparedStatement ps = cn.prepareStatement(sql)) {
             ps.setString(1, empleado.getNombre());
             ps.setString(2, empleado.getApellido());
@@ -35,7 +35,7 @@ public class EmpleadoDAOImpl implements EmpleadoDAO {
     @Override
     public boolean actualizar(Empleado empleado) {
         String sql = "UPDATE empleados SET nombre=?, apellido=?, telefono=?, email=?, puesto=?, salario=? WHERE id_empleado=?";
-        try (Connection cn = ConexionPostgreSQL.getConnection();
+        try (Connection cn = ConexionMySQL.getConnection();
              PreparedStatement ps = cn.prepareStatement(sql)) {
             ps.setString(1, empleado.getNombre());
             ps.setString(2, empleado.getApellido());
@@ -54,7 +54,7 @@ public class EmpleadoDAOImpl implements EmpleadoDAO {
     @Override
     public boolean eliminar(int idEmpleado) {
         String sql = "DELETE FROM empleados WHERE id_empleado=?";
-        try (Connection cn = ConexionPostgreSQL.getConnection();
+        try (Connection cn = ConexionMySQL.getConnection();
              PreparedStatement ps = cn.prepareStatement(sql)) {
             ps.setInt(1, idEmpleado);
             return ps.executeUpdate() > 0;
@@ -67,7 +67,7 @@ public class EmpleadoDAOImpl implements EmpleadoDAO {
     @Override
     public Empleado obtenerPorId(int idEmpleado) {
         String sql = "SELECT * FROM empleados WHERE id_empleado=?";
-        try (Connection cn = ConexionPostgreSQL.getConnection();
+        try (Connection cn = ConexionMySQL.getConnection();
              PreparedStatement ps = cn.prepareStatement(sql)) {
             ps.setInt(1, idEmpleado);
             try (ResultSet rs = ps.executeQuery()) {
@@ -94,7 +94,7 @@ public class EmpleadoDAOImpl implements EmpleadoDAO {
     public List<Empleado> listarTodos() {
         List<Empleado> lista = new ArrayList<>();
         String sql = "SELECT * FROM empleados";
-        try (Connection cn = ConexionPostgreSQL.getConnection();
+        try (Connection cn = ConexionMySQL.getConnection();
              Statement st = cn.createStatement();
              ResultSet rs = st.executeQuery(sql)) {
             while (rs.next()) {
