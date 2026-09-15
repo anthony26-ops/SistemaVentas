@@ -10,6 +10,7 @@ public class Factura {
     private Empleado empleado; 
     private List<DetalleFactura> detalles;
     private double total;
+    private String estado;
 
     public Factura() {
     }
@@ -40,4 +41,8 @@ public class Factura {
 
     public double getTotal() { return total; }
     public void setTotal(double total) { this.total = total; }
+    
+    public String getEstado() { return estado; }
+    public void setEstado(String estado) { this.estado = estado; }
+    
 }

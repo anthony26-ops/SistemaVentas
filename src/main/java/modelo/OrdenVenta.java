@@ -10,7 +10,8 @@ public class OrdenVenta {
     private Empleado empleado;
     private List<DetalleOrdenVenta> detalles;
     private double total;
-
+    private String estado;
+    
     public OrdenVenta() {
     }
 
@@ -40,4 +41,8 @@ public class OrdenVenta {
 
     public double getTotal() { return total; }
     public void setTotal(double total) { this.total = total; }
+    
+    public String getEstado() { return estado; }
+    public void setEstado(String estado) { this.estado = estado; }
+    
 }

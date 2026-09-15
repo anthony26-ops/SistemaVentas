@@ -82,6 +82,7 @@ public class FrmFacturacion extends javax.swing.JFrame {
         cbxProducto.setModel(new javax.swing.DefaultComboBoxModel<>(new String[] { "Item 1", "Item 2", "Item 3", "Item 4" }));
 
         btnAgregar.setText("Agregar a la lista");
+        btnAgregar.addActionListener(this::btnAgregarActionPerformed);
 
         tblDetalles.setModel(new javax.swing.table.DefaultTableModel(
             new Object [][] {
@@ -111,6 +112,7 @@ public class FrmFacturacion extends javax.swing.JFrame {
         btnGuardar.addActionListener(this::btnGuardarActionPerformed);
 
         btnLimpiar.setText("Limpiar Pantalla");
+        btnLimpiar.addActionListener(this::btnLimpiarActionPerformed);
 
         javax.swing.GroupLayout jPanel1Layout = new javax.swing.GroupLayout(jPanel1);
         jPanel1.setLayout(jPanel1Layout);
@@ -213,12 +215,87 @@ public class FrmFacturacion extends javax.swing.JFrame {
     }//GEN-LAST:event_jTextField1ActionPerformed
 
     private void btnGuardarActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_btnGuardarActionPerformed
-        // TODO add your handling code here:
+    try {
+    if (tblDetalles.getRowCount() == 0) {
+        javax.swing.JOptionPane.showMessageDialog(this, "La factura debe tener detalles.");
+        return;
+    }
+    
+    // Extraer datos de la pantalla
+    int idCliente = cbxCliente.getSelectedIndex() + 1; 
+    int idEmpleado = cbxEmpleado.getSelectedIndex() + 1;
+    String textoTotal = lblTotal.getText().replace("Total: Q", "").trim();
+    double total = Double.parseDouble(textoTotal);
+    
+    // El estado inicial de la factura (cumpliendo el Punto 1)
+    String estado = "Emitida"; 
+    
+    // Instanciar el controlador y guardar
+    controlador.FacturaController controller = new controlador.FacturaController();
+    boolean exito = controller.crearFactura(idCliente, idEmpleado, total, estado);
+    
+    if (exito) {
+        javax.swing.JOptionPane.showMessageDialog(this, "¡Factura guardada con éxito!");
+        btnLimpiar.doClick(); // Si tienes botón limpiar
+    } else {
+        javax.swing.JOptionPane.showMessageDialog(this, "Error al registrar la factura.");
+    }
+} catch (Exception ex) {
+    javax.swing.JOptionPane.showMessageDialog(this, ex.getMessage());
+}
     }//GEN-LAST:event_btnGuardarActionPerformed
 
     private void cbxClienteActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_cbxClienteActionPerformed
         // TODO add your handling code here:
     }//GEN-LAST:event_cbxClienteActionPerformed
+
+    private void btnAgregarActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_btnAgregarActionPerformed
+    try {
+    if (tblDetalles.getRowCount() == 0) {
+        javax.swing.JOptionPane.showMessageDialog(this, "La factura debe tener detalles.");
+        return;
+    }
+    
+    // Extraer datos de la pantalla
+    int idCliente = cbxCliente.getSelectedIndex() + 1; 
+    int idEmpleado = cbxEmpleado.getSelectedIndex() + 1;
+    String textoTotal = lblTotal.getText().replace("Total: Q", "").trim();
+    double total = Double.parseDouble(textoTotal);
+    
+    // El estado inicial de la factura (cumpliendo el Punto 1)
+    String estado = "Emitida"; 
+    
+    // Instanciar el controlador y guardar
+    controlador.FacturaController controller = new controlador.FacturaController();
+    boolean exito = controller.crearFactura(idCliente, idEmpleado, total, estado);
+    
+    if (exito) {
+        javax.swing.JOptionPane.showMessageDialog(this, "¡Factura guardada con éxito!");
+        btnLimpiar.doClick(); // Si tienes botón limpiar
+    } else {
+        javax.swing.JOptionPane.showMessageDialog(this, "Error al registrar la factura.");
+    }
+} catch (Exception ex) {
+    javax.swing.JOptionPane.showMessageDialog(this, ex.getMessage());
+}
+    }//GEN-LAST:event_btnAgregarActionPerformed
+
+    private void btnLimpiarActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_btnLimpiarActionPerformed
+    // Reiniciar ComboBox
+    if (cbxCliente.getItemCount() > 0) {
+    cbxCliente.setSelectedIndex(0);
+}
+    if (cbxEmpleado.getItemCount() > 0) {
+    cbxEmpleado.setSelectedIndex(0);
+}
+
+    // Reiniciar la etiqueta del total
+    lblTotal.setText("Total: Q0.00");
+
+    // Vaciar la tabla
+    javax.swing.table.DefaultTableModel modelo = (javax.swing.table.DefaultTableModel) tblDetalles.getModel();
+    modelo.setRowCount(0);
+    }//GEN-LAST:event_btnLimpiarActionPerformed
 
     /**
      * @param args the command line arguments
