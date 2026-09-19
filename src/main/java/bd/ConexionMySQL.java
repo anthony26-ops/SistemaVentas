@@ -234,38 +234,39 @@ public class ConexionMySQL {
                     + ") ENGINE=InnoDB");
 
             // -- sección Pago/OrdenDespacho/DetalleOrdenDespacho -- (Oscar)
+            // Tablas reales de su PagoDAOImpl/OrdenDespachoDAOImpl (nombres y
+            // columnas distintos a los que proponía el documento original).
+            // id_factura / id_orden_venta quedan sin FOREIGN KEY, tal como
+            // los dejó Oscar, porque su DAO no valida contra esas tablas.
             stmt.executeUpdate(
-                    "CREATE TABLE IF NOT EXISTS ventas_ordenes_despacho ("
-                    + "id_orden_despacho INT NOT NULL PRIMARY KEY,"
-                    + "orden_venta_id INT NOT NULL,"
-                    + "bodega_id INT NOT NULL,"
-                    + "empleado_id INT NOT NULL,"
-                    + "fecha_despacho DATE,"
-                    + "estado VARCHAR(30) NOT NULL DEFAULT 'Pendiente',"
-                    + "CONSTRAINT fk_od_orden FOREIGN KEY (orden_venta_id) REFERENCES ventas_ordenes_venta(id_orden_venta),"
-                    + "CONSTRAINT fk_od_bodega FOREIGN KEY (bodega_id) REFERENCES ventas_bodegas(id_bodega),"
-                    + "CONSTRAINT fk_od_empleado FOREIGN KEY (empleado_id) REFERENCES empleados(id_empleado)"
+                    "CREATE TABLE IF NOT EXISTS pagos ("
+                    + "id_pago INT AUTO_INCREMENT PRIMARY KEY,"
+                    + "id_factura INT NOT NULL,"
+                    + "fecha TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,"
+                    + "monto DECIMAL(10,2) NOT NULL CHECK (monto > 0),"
+                    + "tipo_pago VARCHAR(20) NOT NULL,"
+                    + "referencia VARCHAR(100),"
+                    + "estado VARCHAR(20) NOT NULL DEFAULT 'COMPLETADO'"
                     + ") ENGINE=InnoDB");
 
             stmt.executeUpdate(
-                    "CREATE TABLE IF NOT EXISTS ventas_orden_despacho_detalles ("
-                    + "id_detalle BIGINT AUTO_INCREMENT PRIMARY KEY,"
-                    + "orden_despacho_id INT NOT NULL,"
-                    + "producto_id INT NOT NULL,"
-                    + "cantidad_despachada INT NOT NULL,"
-                    + "CONSTRAINT fk_odd_orden FOREIGN KEY (orden_despacho_id) REFERENCES ventas_ordenes_despacho(id_orden_despacho) ON DELETE CASCADE,"
-                    + "CONSTRAINT fk_odd_producto FOREIGN KEY (producto_id) REFERENCES ventas_productos(id_producto)"
+                    "CREATE TABLE IF NOT EXISTS ordenes_despacho ("
+                    + "id_orden_despacho INT AUTO_INCREMENT PRIMARY KEY,"
+                    + "id_orden_venta INT NOT NULL,"
+                    + "fecha_despacho TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,"
+                    + "direccion_entrega VARCHAR(200) NOT NULL,"
+                    + "transportista VARCHAR(100),"
+                    + "estado VARCHAR(20) NOT NULL DEFAULT 'PENDIENTE'"
                     + ") ENGINE=InnoDB");
 
             stmt.executeUpdate(
-                    "CREATE TABLE IF NOT EXISTS ventas_pagos ("
-                    + "id_pago INT NOT NULL PRIMARY KEY,"
-                    + "factura_id INT NOT NULL,"
-                    + "monto DECIMAL(12,2) NOT NULL,"
-                    + "fecha_pago DATE NOT NULL,"
-                    + "tipo_metodo VARCHAR(20) NOT NULL,"
-                    + "detalle_metodo VARCHAR(150),"
-                    + "CONSTRAINT fk_pago_factura FOREIGN KEY (factura_id) REFERENCES ventas_facturas(id_factura)"
+                    "CREATE TABLE IF NOT EXISTS detalle_orden_despacho ("
+                    + "id_detalle_despacho INT AUTO_INCREMENT PRIMARY KEY,"
+                    + "id_orden_despacho INT NOT NULL,"
+                    + "id_producto INT NOT NULL,"
+                    + "nombre_producto VARCHAR(100) NOT NULL,"
+                    + "cantidad INT NOT NULL CHECK (cantidad > 0),"
+                    + "CONSTRAINT fk_detalle_despacho_orden FOREIGN KEY (id_orden_despacho) REFERENCES ordenes_despacho(id_orden_despacho) ON DELETE CASCADE"
                     + ") ENGINE=InnoDB");
 
             // -- sección Usuario -- (Anthony)
