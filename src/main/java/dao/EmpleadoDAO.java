@@ -6,6 +6,7 @@ package dao;
 
 import java.util.List;
 import modelo.Empleado;
+import modelo.Vendedor;
 
 public interface EmpleadoDAO {
     boolean insertar(Empleado empleado);
@@ -13,4 +14,5 @@ public interface EmpleadoDAO {
     boolean eliminar(int idEmpleado);
     Empleado obtenerPorId(int idEmpleado);
     List<Empleado> listarTodos();
+    List<Vendedor> listarVendedores();
 }

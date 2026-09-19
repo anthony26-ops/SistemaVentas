@@ -5,14 +5,50 @@ package Vista;
  * @author Aramis Ramos
  */
 public class FrmFacturacion extends javax.swing.JFrame {
-    
+
     private static final java.util.logging.Logger logger = java.util.logging.Logger.getLogger(FrmFacturacion.class.getName());
+    private final controlador.FacturaController controller = new controlador.FacturaController();
 
     /**
      * Creates new form FrmFacturacion
      */
     public FrmFacturacion() {
         initComponents();
+        cargarCombos();
+    }
+
+    /**
+     * Carga Cliente/Empleado/Producto reales en los combos (antes traían
+     * "Item 1".."Item 4" de ejemplo y nunca se conectaron a los DAO).
+     */
+    private void cargarCombos() {
+        javax.swing.DefaultComboBoxModel<String> modeloClientes = new javax.swing.DefaultComboBoxModel<>();
+        for (modelo.Cliente c : controller.obtenerClientes()) {
+            modeloClientes.addElement(c.getId() + " - " + c.getNombre() + " " + c.getApellido());
+        }
+        cbxCliente.setModel(modeloClientes);
+
+        javax.swing.DefaultComboBoxModel<String> modeloEmpleados = new javax.swing.DefaultComboBoxModel<>();
+        for (modelo.Empleado e : controller.obtenerEmpleados()) {
+            modeloEmpleados.addElement(e.getId() + " - " + e.getNombre() + " " + e.getApellido());
+        }
+        cbxEmpleado.setModel(modeloEmpleados);
+
+        javax.swing.DefaultComboBoxModel<String> modeloProductos = new javax.swing.DefaultComboBoxModel<>();
+        for (modelo.Producto p : controller.obtenerProductos()) {
+            modeloProductos.addElement(p.getNombre());
+        }
+        cbxProducto.setModel(modeloProductos);
+    }
+
+    /** Extrae el id de un ítem con formato "id - nombre" de los combos. */
+    private int idDesdeItemCombo(Object item) {
+        if (item == null) {
+            return 0;
+        }
+        String texto = item.toString();
+        int guion = texto.indexOf(" - ");
+        return guion > 0 ? Integer.parseInt(texto.substring(0, guion).trim()) : 0;
     }
 
     /**
@@ -222,18 +258,16 @@ public class FrmFacturacion extends javax.swing.JFrame {
     }
     
     // Extraer datos de la pantalla
-    int idCliente = cbxCliente.getSelectedIndex() + 1; 
-    int idEmpleado = cbxEmpleado.getSelectedIndex() + 1;
+    int idCliente = idDesdeItemCombo(cbxCliente.getSelectedItem());
+    int idEmpleado = idDesdeItemCombo(cbxEmpleado.getSelectedItem());
     String textoTotal = lblTotal.getText().replace("Total: Q", "").trim();
     double total = Double.parseDouble(textoTotal);
-    
+
     // El estado inicial de la factura (cumpliendo el Punto 1)
-    String estado = "Emitida"; 
-    
-    // Instanciar el controlador y guardar
-    controlador.FacturaController controller = new controlador.FacturaController();
+    String estado = "Emitida";
+
     boolean exito = controller.crearFactura(idCliente, idEmpleado, total, estado);
-    
+
     if (exito) {
         javax.swing.JOptionPane.showMessageDialog(this, "¡Factura guardada con éxito!");
         btnLimpiar.doClick(); // Si tienes botón limpiar
@@ -246,42 +280,44 @@ public class FrmFacturacion extends javax.swing.JFrame {
     }//GEN-LAST:event_btnGuardarActionPerformed
 
     private void cbxClienteActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_cbxClienteActionPerformed
-        // TODO add your handling code here:
+        // No hace falta reaccionar a la selección de cliente.
     }//GEN-LAST:event_cbxClienteActionPerformed
 
     private void btnAgregarActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_btnAgregarActionPerformed
     try {
-    if (tblDetalles.getRowCount() == 0) {
-        javax.swing.JOptionPane.showMessageDialog(this, "La factura debe tener detalles.");
-        return;
+        // Agrega una línea de producto a la tabla de detalles (antes este
+        // botón, por error, duplicaba la lógica de "Guardar factura").
+        String producto = cbxProducto.getSelectedItem().toString();
+        int cantidad = (Integer) spnCantidad.getValue();
+
+        double precioUnitario = controller.obtenerPrecioProducto(producto);
+        double subtotal = cantidad * precioUnitario;
+
+        javax.swing.table.DefaultTableModel modelo = (javax.swing.table.DefaultTableModel) tblDetalles.getModel();
+        modelo.addRow(new Object[]{
+            modelo.getRowCount() + 1,
+            producto,
+            cantidad,
+            precioUnitario,
+            subtotal
+        });
+
+        double sumaTotal = 0;
+        for (int i = 0; i < modelo.getRowCount(); i++) {
+            sumaTotal += Double.parseDouble(modelo.getValueAt(i, 4).toString());
+        }
+        lblTotal.setText(String.format("Total: Q%.2f", sumaTotal));
+    } catch (Exception ex) {
+        javax.swing.JOptionPane.showMessageDialog(this,
+                "Error al agregar el producto: " + ex.getMessage(),
+                "Error",
+                javax.swing.JOptionPane.ERROR_MESSAGE);
     }
-    
-    // Extraer datos de la pantalla
-    int idCliente = cbxCliente.getSelectedIndex() + 1; 
-    int idEmpleado = cbxEmpleado.getSelectedIndex() + 1;
-    String textoTotal = lblTotal.getText().replace("Total: Q", "").trim();
-    double total = Double.parseDouble(textoTotal);
-    
-    // El estado inicial de la factura (cumpliendo el Punto 1)
-    String estado = "Emitida"; 
-    
-    // Instanciar el controlador y guardar
-    controlador.FacturaController controller = new controlador.FacturaController();
-    boolean exito = controller.crearFactura(idCliente, idEmpleado, total, estado);
-    
-    if (exito) {
-        javax.swing.JOptionPane.showMessageDialog(this, "¡Factura guardada con éxito!");
-        btnLimpiar.doClick(); // Si tienes botón limpiar
-    } else {
-        javax.swing.JOptionPane.showMessageDialog(this, "Error al registrar la factura.");
-    }
-} catch (Exception ex) {
-    javax.swing.JOptionPane.showMessageDialog(this, ex.getMessage());
-}
     }//GEN-LAST:event_btnAgregarActionPerformed
 
     private void btnLimpiarActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_btnLimpiarActionPerformed
     // Reiniciar ComboBox
+    cargarCombos();
     if (cbxCliente.getItemCount() > 0) {
     cbxCliente.setSelectedIndex(0);
 }

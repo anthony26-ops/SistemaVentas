@@ -7,6 +7,7 @@ package controlador;
 import dao.EmpleadoDAO;
 import dao.impl.EmpleadoDAOImpl;
 import modelo.Empleado;
+import modelo.Vendedor;
 import java.util.List;
 
 public class EmpleadoController {
@@ -26,11 +27,27 @@ public class EmpleadoController {
         return empleadoDAO.actualizar(empleado);
     }
 
+    public boolean guardarVendedor(String nombre, String apellido, String telefono, String email, String cargo,
+            double salario, String zonaVenta, double metaVentasMensual) {
+        Vendedor vendedor = new Vendedor(0, nombre, apellido, telefono, email, 0, cargo, salario, zonaVenta, metaVentasMensual);
+        return empleadoDAO.insertar(vendedor);
+    }
+
+    public boolean modificarVendedor(int idEmpleado, String nombre, String apellido, String telefono, String email,
+            String cargo, double salario, String zonaVenta, double metaVentasMensual) {
+        Vendedor vendedor = new Vendedor(0, nombre, apellido, telefono, email, idEmpleado, cargo, salario, zonaVenta, metaVentasMensual);
+        return empleadoDAO.actualizar(vendedor);
+    }
+
     public boolean borrarEmpleado(int idEmpleado) {
         return empleadoDAO.eliminar(idEmpleado);
     }
 
     public List<Empleado> listarEmpleados() {
         return empleadoDAO.listarTodos();
+    }
+
+    public List<Vendedor> listarVendedores() {
+        return empleadoDAO.listarVendedores();
     }
 }

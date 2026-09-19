@@ -128,14 +128,26 @@ public class FrmMenuPrincipal extends JFrame {
     /**
      * Abre una pantalla del sistema por su nombre de clase completo.
      * Se usa reflexión para que este menú funcione aunque la pantalla
-     * de un compañero todavía no exista o esté en desarrollo.
+     * de un compañero todavía no exista o esté en desarrollo. Soporta tanto
+     * pantallas JFrame (la mayoría) como JInternalFrame (Cristofer las hizo
+     * así para el módulo de Cliente/Empleado) abriendo estas últimas dentro
+     * del JDesktopPane en vez de como ventana aparte.
      */
     private void abrirVentana(String claseFQN, String nombreModulo) {
         try {
             Class<?> clazz = Class.forName(claseFQN);
-            JFrame frame = (JFrame) clazz.getDeclaredConstructor().newInstance();
-            frame.setLocationRelativeTo(this);
-            frame.setVisible(true);
+            Object instancia = clazz.getDeclaredConstructor().newInstance();
+            if (instancia instanceof javax.swing.JInternalFrame internalFrame) {
+                desktopPane.add(internalFrame);
+                internalFrame.setVisible(true);
+                try {
+                    internalFrame.setSelected(true);
+                } catch (java.beans.PropertyVetoException ignored) {
+                }
+            } else if (instancia instanceof JFrame frame) {
+                frame.setLocationRelativeTo(this);
+                frame.setVisible(true);
+            }
         } catch (ReflectiveOperationException | ClassCastException ex) {
             logger.log(Level.WARNING, "No se pudo abrir el módulo " + nombreModulo, ex);
             JOptionPane.showMessageDialog(this,

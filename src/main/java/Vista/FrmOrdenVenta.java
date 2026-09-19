@@ -5,14 +5,50 @@ package Vista;
  * @author Aramis Ramos
  */
 public class FrmOrdenVenta extends javax.swing.JFrame {
-    
+
     private static final java.util.logging.Logger logger = java.util.logging.Logger.getLogger(FrmOrdenVenta.class.getName());
+    private final controlador.OrdenVentaController controller = new controlador.OrdenVentaController();
 
     /**
      * Creates new form FrmOrdenVenta
      */
     public FrmOrdenVenta() {
         initComponents();
+        cargarCombos();
+    }
+
+    /**
+     * Carga Cliente/Empleado/Producto reales en los combos (antes traían
+     * "Item 1".."Item 4" de ejemplo y nunca se conectaron a los DAO).
+     */
+    private void cargarCombos() {
+        javax.swing.DefaultComboBoxModel<String> modeloClientes = new javax.swing.DefaultComboBoxModel<>();
+        for (modelo.Cliente c : controller.obtenerClientes()) {
+            modeloClientes.addElement(c.getId() + " - " + c.getNombre() + " " + c.getApellido());
+        }
+        cbxCliente.setModel(modeloClientes);
+
+        javax.swing.DefaultComboBoxModel<String> modeloEmpleados = new javax.swing.DefaultComboBoxModel<>();
+        for (modelo.Empleado e : controller.obtenerEmpleados()) {
+            modeloEmpleados.addElement(e.getId() + " - " + e.getNombre() + " " + e.getApellido());
+        }
+        cbxEmpleado.setModel(modeloEmpleados);
+
+        javax.swing.DefaultComboBoxModel<String> modeloProductos = new javax.swing.DefaultComboBoxModel<>();
+        for (modelo.Producto p : controller.obtenerProductos()) {
+            modeloProductos.addElement(p.getNombre());
+        }
+        cbxProducto.setModel(modeloProductos);
+    }
+
+    /** Extrae el id de un ítem con formato "id - nombre" de los combos. */
+    private int idDesdeItemCombo(Object item) {
+        if (item == null) {
+            return 0;
+        }
+        String texto = item.toString();
+        int guion = texto.indexOf(" - ");
+        return guion > 0 ? Integer.parseInt(texto.substring(0, guion).trim()) : 0;
     }
 
     /**
@@ -211,14 +247,13 @@ public class FrmOrdenVenta extends javax.swing.JFrame {
     }
     
     // Extraer datos de la pantalla
-    int idCliente = cbxCliente.getSelectedIndex() + 1; // Ajusta según cómo manejes los IDs
-    int idEmpleado = cbxEmpleado.getSelectedIndex() + 1;
+    int idCliente = idDesdeItemCombo(cbxCliente.getSelectedItem());
+    int idEmpleado = idDesdeItemCombo(cbxEmpleado.getSelectedItem());
     String textoTotal = lblTotal.getText().replace("Total: Q", "").trim();
     double total = Double.parseDouble(textoTotal);
     String estado = "Pendiente"; // Nuevo campo obligatorio
-    
-    // Instanciar el controlador puro y llamar a crearPedido
-    controlador.OrdenVentaController controller = new controlador.OrdenVentaController();
+
+    // Llamar a crearPedido con el controlador puro (sin dependencias de Swing)
     boolean exito = controller.crearPedido(idCliente, idEmpleado, total, estado);
     
     if (exito) {
@@ -238,9 +273,8 @@ public class FrmOrdenVenta extends javax.swing.JFrame {
     String producto = cbxProducto.getSelectedItem().toString();
     int cantidad = (Integer) spnCantidad.getValue();
     
-    // 2. Usar el controlador para obtener el precio dinámico (¡Adiós a los 150.00 fijos!)
-    controlador.OrdenVentaController controller = new controlador.OrdenVentaController();
-    double precioUnitario = controller.obtenerPrecioProducto(producto); 
+    // 2. Usar el controlador para obtener el precio dinámico (tomado del catálogo real de Producto)
+    double precioUnitario = controller.obtenerPrecioProducto(producto);
     
     // 3. Calcular el subtotal
     double subtotal = cantidad * precioUnitario;
@@ -273,6 +307,7 @@ public class FrmOrdenVenta extends javax.swing.JFrame {
     }//GEN-LAST:event_btnAgregarActionPerformed
 
     private void btnLimpiarActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_btnLimpiarActionPerformed
+        cargarCombos();
         if (cbxCliente.getItemCount() > 0) {
     cbxCliente.setSelectedIndex(0);
 }

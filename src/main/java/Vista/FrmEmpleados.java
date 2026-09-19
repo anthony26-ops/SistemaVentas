@@ -54,6 +54,11 @@ public class FrmEmpleados extends JInternalFrame {
         txtEmail.setText("");
         txtPuesto.setText("");
         txtSalario.setText("");
+        chkVendedor.setSelected(false);
+        txtZonaVenta.setText("");
+        txtZonaVenta.setEnabled(false);
+        txtMetaMensual.setText("");
+        txtMetaMensual.setEnabled(false);
     }
 
     /**
@@ -86,6 +91,11 @@ public class FrmEmpleados extends JInternalFrame {
         txtEmail = new javax.swing.JTextField();
         txtPuesto = new javax.swing.JTextField();
         txtSalario = new javax.swing.JTextField();
+        chkVendedor = new javax.swing.JCheckBox();
+        jLabel9 = new javax.swing.JLabel();
+        txtZonaVenta = new javax.swing.JTextField();
+        jLabel10 = new javax.swing.JLabel();
+        txtMetaMensual = new javax.swing.JTextField();
 
         javax.swing.GroupLayout jDesktopPane1Layout = new javax.swing.GroupLayout(jDesktopPane1);
         jDesktopPane1.setLayout(jDesktopPane1Layout);
@@ -142,6 +152,15 @@ public class FrmEmpleados extends JInternalFrame {
 
         txtPuesto.addActionListener(this::txtPuestoActionPerformed);
 
+        chkVendedor.setText("Es vendedor");
+        chkVendedor.addActionListener(this::chkVendedorActionPerformed);
+
+        jLabel9.setText("Zona de venta :");
+        jLabel10.setText("Meta mensual :");
+
+        txtZonaVenta.setEnabled(false);
+        txtMetaMensual.setEnabled(false);
+
         javax.swing.GroupLayout layout = new javax.swing.GroupLayout(getContentPane());
         getContentPane().setLayout(layout);
         layout.setHorizontalGroup(
@@ -193,6 +212,18 @@ public class FrmEmpleados extends JInternalFrame {
                     .addGroup(layout.createSequentialGroup()
                         .addComponent(jLabel1, javax.swing.GroupLayout.PREFERRED_SIZE, 625, javax.swing.GroupLayout.PREFERRED_SIZE)
                         .addGap(0, 0, Short.MAX_VALUE))
+                    .addGroup(layout.createSequentialGroup()
+                        .addContainerGap()
+                        .addComponent(chkVendedor)
+                        .addGap(18, 18, 18)
+                        .addComponent(jLabel9)
+                        .addGap(6, 6, 6)
+                        .addComponent(txtZonaVenta, javax.swing.GroupLayout.PREFERRED_SIZE, 120, javax.swing.GroupLayout.PREFERRED_SIZE)
+                        .addGap(18, 18, 18)
+                        .addComponent(jLabel10)
+                        .addGap(6, 6, 6)
+                        .addComponent(txtMetaMensual, javax.swing.GroupLayout.PREFERRED_SIZE, 120, javax.swing.GroupLayout.PREFERRED_SIZE)
+                        .addGap(0, 0, Short.MAX_VALUE))
                     .addComponent(jScrollPane1))
                 .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED)
                 .addComponent(jDesktopPane1))
@@ -227,6 +258,13 @@ public class FrmEmpleados extends JInternalFrame {
                 .addGroup(layout.createParallelGroup(javax.swing.GroupLayout.Alignment.BASELINE)
                     .addComponent(jLabel5)
                     .addComponent(txtTelefono, javax.swing.GroupLayout.PREFERRED_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.PREFERRED_SIZE))
+                .addGap(18, 18, 18)
+                .addGroup(layout.createParallelGroup(javax.swing.GroupLayout.Alignment.BASELINE)
+                    .addComponent(chkVendedor)
+                    .addComponent(jLabel9)
+                    .addComponent(txtZonaVenta, javax.swing.GroupLayout.PREFERRED_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.PREFERRED_SIZE)
+                    .addComponent(jLabel10)
+                    .addComponent(txtMetaMensual, javax.swing.GroupLayout.PREFERRED_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.PREFERRED_SIZE))
                 .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.UNRELATED)
                 .addComponent(jScrollPane1, javax.swing.GroupLayout.PREFERRED_SIZE, 242, javax.swing.GroupLayout.PREFERRED_SIZE))
         );
@@ -236,7 +274,15 @@ public class FrmEmpleados extends JInternalFrame {
 
     private void btnGuardarActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_btnGuardarActionPerformed
        double salario = Double.parseDouble(txtSalario.getText());
-        if (controller.guardarEmpleado(txtNombre.getText(), txtApellido.getText(), txtTelefono.getText(), txtEmail.getText(), txtPuesto.getText(), salario)) {
+        boolean guardado;
+        if (chkVendedor.isSelected()) {
+            double meta = txtMetaMensual.getText().isEmpty() ? 0 : Double.parseDouble(txtMetaMensual.getText());
+            guardado = controller.guardarVendedor(txtNombre.getText(), txtApellido.getText(), txtTelefono.getText(),
+                    txtEmail.getText(), txtPuesto.getText(), salario, txtZonaVenta.getText(), meta);
+        } else {
+            guardado = controller.guardarEmpleado(txtNombre.getText(), txtApellido.getText(), txtTelefono.getText(), txtEmail.getText(), txtPuesto.getText(), salario);
+        }
+        if (guardado) {
             JOptionPane.showMessageDialog(this, "Empleado guardado.");
             cargarTabla();
             limpiarCampos();
@@ -247,12 +293,30 @@ public class FrmEmpleados extends JInternalFrame {
       if (txtId.getText().isEmpty()) return;
         int id = Integer.parseInt(txtId.getText());
         double salario = Double.parseDouble(txtSalario.getText());
-        if (controller.modificarEmpleado(id, txtNombre.getText(), txtApellido.getText(), txtTelefono.getText(), txtEmail.getText(), txtPuesto.getText(), salario)) {
+        boolean actualizado;
+        if (chkVendedor.isSelected()) {
+            double meta = txtMetaMensual.getText().isEmpty() ? 0 : Double.parseDouble(txtMetaMensual.getText());
+            actualizado = controller.modificarVendedor(id, txtNombre.getText(), txtApellido.getText(), txtTelefono.getText(),
+                    txtEmail.getText(), txtPuesto.getText(), salario, txtZonaVenta.getText(), meta);
+        } else {
+            actualizado = controller.modificarEmpleado(id, txtNombre.getText(), txtApellido.getText(), txtTelefono.getText(), txtEmail.getText(), txtPuesto.getText(), salario);
+        }
+        if (actualizado) {
             JOptionPane.showMessageDialog(this, "Empleado actualizado.");
             cargarTabla();
             limpiarCampos();
         }
     }//GEN-LAST:event_btnActualizarActionPerformed
+
+    private void chkVendedorActionPerformed(java.awt.event.ActionEvent evt) {
+        boolean esVendedor = chkVendedor.isSelected();
+        txtZonaVenta.setEnabled(esVendedor);
+        txtMetaMensual.setEnabled(esVendedor);
+        if (!esVendedor) {
+            txtZonaVenta.setText("");
+            txtMetaMensual.setText("");
+        }
+    }
 
     private void txtNombreActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_txtNombreActionPerformed
         // TODO add your handling code here:
@@ -289,6 +353,7 @@ public class FrmEmpleados extends JInternalFrame {
     private javax.swing.JButton btnActualizar;
     private javax.swing.JButton btnEliminar;
     private javax.swing.JButton btnGuardar;
+    private javax.swing.JCheckBox chkVendedor;
     private javax.swing.JDesktopPane jDesktopPane1;
     private javax.swing.JLabel jLabel1;
     private javax.swing.JLabel jLabel2;
@@ -298,14 +363,18 @@ public class FrmEmpleados extends JInternalFrame {
     private javax.swing.JLabel jLabel6;
     private javax.swing.JLabel jLabel7;
     private javax.swing.JLabel jLabel8;
+    private javax.swing.JLabel jLabel9;
+    private javax.swing.JLabel jLabel10;
     private javax.swing.JScrollPane jScrollPane1;
     private javax.swing.JTable tablaEmpleados;
     private javax.swing.JTextField txtApellido;
     private javax.swing.JTextField txtEmail;
     private javax.swing.JTextField txtId;
+    private javax.swing.JTextField txtMetaMensual;
     private javax.swing.JTextField txtNombre;
     private javax.swing.JTextField txtPuesto;
     private javax.swing.JTextField txtSalario;
     private javax.swing.JTextField txtTelefono;
+    private javax.swing.JTextField txtZonaVenta;
     // End of variables declaration//GEN-END:variables
 }

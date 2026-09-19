@@ -3,6 +3,8 @@ package controlador;
 import dao.ClienteDAO;
 import dao.EmpleadoDAO;
 import dao.OrdenVentaDAO;
+import dao.ProductoDAO;
+import dao.ProductoDAOImpl;
 import dao.impl.ClienteDAOImpl;
 import dao.impl.EmpleadoDAOImpl;
 import dao.impl.OrdenVentaDAOImpl;
@@ -10,17 +12,20 @@ import java.util.List;
 import modelo.Cliente;
 import modelo.Empleado;
 import modelo.OrdenVenta;
+import modelo.Producto;
 
 public class OrdenVentaController {
-    
+
     private OrdenVentaDAO ordenDAO;
     private ClienteDAO clienteDAO;
     private EmpleadoDAO empleadoDAO;
-    
+    private ProductoDAO productoDAO;
+
     public OrdenVentaController() {
         this.ordenDAO = new OrdenVentaDAOImpl();
         this.clienteDAO = new ClienteDAOImpl();
         this.empleadoDAO = new EmpleadoDAOImpl();
+        this.productoDAO = new ProductoDAOImpl();
     }
     
     public List<Cliente> obtenerClientes() {
@@ -58,17 +63,21 @@ public class OrdenVentaController {
     }
     
     /**
-     * PUNTO 6: Precio dinámico.
-     * Simula la conexión al inventario mientras se integra el código de André.
+     * PUNTO 6: Precio dinámico, tomado del catálogo real de Producto (André).
      */
     public double obtenerPrecioProducto(String nombreProducto) {
-        // TODO: Reemplazar esto por ProductoDAO cuando André suba sus archivos.
-        String productoLower = nombreProducto.toLowerCase();
-        
-        if (productoLower.contains("laptop")) return 7500.00;
-        if (productoLower.contains("impresora")) return 1200.00;
-        if (productoLower.contains("mouse")) return 250.00;
-        
-        return 150.00; // Precio por defecto
+        for (Producto p : productoDAO.listar()) {
+            if (p.getNombre() != null && p.getNombre().equalsIgnoreCase(nombreProducto)) {
+                return p.getPrecio();
+            }
+        }
+        return 0.0;
+    }
+
+    /**
+     * Productos disponibles para el combo de la vista (André).
+     */
+    public List<Producto> obtenerProductos() {
+        return productoDAO.listar();
     }
 }

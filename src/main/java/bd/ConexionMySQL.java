@@ -129,6 +129,9 @@ public class ConexionMySQL {
                     + "email VARCHAR(100), "
                     + "puesto VARCHAR(50) NOT NULL, "
                     + "salario DECIMAL(10,2) NOT NULL, "
+                    + "tipo_empleado VARCHAR(20) NOT NULL DEFAULT 'GENERAL', "
+                    + "zona_venta VARCHAR(100), "
+                    + "meta_ventas_mensual DECIMAL(12,2), "
                     + "CONSTRAINT fk_empleado_persona FOREIGN KEY (id_persona) REFERENCES personas(id_persona) ON DELETE CASCADE"
                     + ") ENGINE=InnoDB");
 
