@@ -10,6 +10,7 @@ import dao.impl.EmpleadoDAOImpl;
 import dao.impl.OrdenVentaDAOImpl;
 import java.util.List;
 import modelo.Cliente;
+import modelo.DetalleOrdenVenta;
 import modelo.Empleado;
 import modelo.OrdenVenta;
 import modelo.Producto;
@@ -61,7 +62,44 @@ public class OrdenVentaController {
         
         return ordenDAO.registrarOrden(orden);
     }
-    
+
+    /**
+     * Igual que crearPedido, pero guardando también el detalle de productos
+     * (List&lt;DetalleOrdenVenta&gt;) para que la factura y el despacho puedan
+     * generarse a partir de la orden real.
+     */
+    public boolean crearPedido(int idCliente, int idEmpleado, List<DetalleOrdenVenta> detalles, String estado) throws Exception {
+        if (detalles == null || detalles.isEmpty()) {
+            throw new Exception("El pedido debe tener al menos un producto.");
+        }
+
+        double total = 0;
+        for (DetalleOrdenVenta d : detalles) {
+            total += d.getSubtotal();
+        }
+
+        OrdenVenta orden = new OrdenVenta();
+        orden.setFecha(new java.sql.Date(System.currentTimeMillis()));
+
+        Cliente cliente = new Cliente();
+        cliente.setId(idCliente);
+        orden.setCliente(cliente);
+
+        Empleado empleado = new Empleado();
+        empleado.setId(idEmpleado);
+        orden.setEmpleado(empleado);
+
+        orden.setTotal(total);
+        orden.setEstado(estado);
+        orden.setDetalles(detalles);
+
+        return ordenDAO.registrarOrden(orden);
+    }
+
+    public List<OrdenVenta> listarPendientes() {
+        return ordenDAO.listarPendientes();
+    }
+
     /**
      * PUNTO 6: Precio dinámico, tomado del catálogo real de Producto (André).
      */

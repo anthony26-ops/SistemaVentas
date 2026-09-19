@@ -3,11 +3,15 @@ package dao.impl;
 import bd.ConexionException;
 import bd.ConexionMySQL;
 import dao.OrdenDespachoDAO;
+import dao.OrdenVentaDAO;
+import dao.ProductoDAO;
+import dao.ProductoDAOImpl;
 import java.sql.*;
 import java.util.ArrayList;
 import java.util.List;
 import modelo.DetalleOrdenDespacho;
 import modelo.OrdenDespacho;
+import modelo.Producto;
 
 public class OrdenDespachoDAOImpl implements OrdenDespachoDAO {
 
@@ -66,6 +70,14 @@ public class OrdenDespachoDAOImpl implements OrdenDespachoDAO {
             }
 
             cn.commit();
+
+            // Al confirmar el despacho: descontar existencia de cada
+            // producto despachado y marcar la orden de venta como
+            // "Despachada".
+            descontarExistencias(orden.getDetalles());
+            OrdenVentaDAO ordenVentaDAO = new OrdenVentaDAOImpl();
+            ordenVentaDAO.actualizarEstado(orden.getIdOrdenVenta(), "Despachada");
+
             return true;
 
         } catch (SQLException | ConexionException e) {
@@ -86,6 +98,20 @@ public class OrdenDespachoDAOImpl implements OrdenDespachoDAO {
                 } catch (SQLException ex) {
                     ex.printStackTrace();
                 }
+            }
+        }
+    }
+
+    private void descontarExistencias(List<DetalleOrdenDespacho> detalles) {
+        if (detalles == null) {
+            return;
+        }
+        ProductoDAO productoDAO = new ProductoDAOImpl();
+        for (DetalleOrdenDespacho detalle : detalles) {
+            Producto producto = productoDAO.buscarPorId(detalle.getIdProducto());
+            if (producto != null) {
+                int nuevaExistencia = Math.max(producto.getExistencia() - detalle.getCantidad(), 0);
+                productoDAO.actualizarExistencia(producto.getIdProducto(), nuevaExistencia);
             }
         }
     }

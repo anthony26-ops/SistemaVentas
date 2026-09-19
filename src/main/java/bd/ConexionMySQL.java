@@ -79,19 +79,18 @@ public class ConexionMySQL {
      * IMPORTANTE: la tabla de Usuario va al final porque tiene una llave
      * foránea hacia empleados, así que esa tabla debe existir primero.
      *
-     * NOTA DE INTEGRACIÓN (Anthony): las tablas de Producto/Bodega (André),
-     * Factura/OrdenVenta (Carlos), Pago/OrdenDespacho (Oscar) y Usuario
-     * (Anthony) usan la convención "ventas_*" con columna "id" que define
-     * el documento base. El módulo de Cliente/Empleado de Cristofer, en
-     * cambio, quedó implementado con sus propias tablas
-     * "personas"/"clientes"/"empleados" (nombres y llaves distintas, con
-     * id_cliente/id_empleado autoincrementales). El documento original
-     * asumía que las FK de OrdenVenta/Factura/OrdenDespacho/Usuario
-     * apuntarían a "ventas_clientes(id)"/"ventas_empleados(id)", pero esas
-     * tablas no existen: por eso esas FK apuntan aquí a clientes(id_cliente)
-     * y empleados(id_empleado), las tablas reales de Cristofer. Si él llega
-     * a renombrar su esquema para alinearlo al documento, hay que actualizar
-     * estas referencias también.
+     * NOTA DE INTEGRACIÓN (Anthony): las tablas de este método usan los
+     * nombres/columnas que los DAOImpl de cada quien realmente escribieron
+     * en su SQL (no siempre coinciden con los nombres "ventas_*" que
+     * proponía el documento original, ver ejemplos abajo). El módulo de
+     * Cliente/Empleado de Cristofer quedó como "personas"/"clientes"/
+     * "empleados" (con id_cliente/id_empleado autoincrementales); el de
+     * Factura/OrdenVenta de Carlos como "ordenes_venta"/"facturas" (con PK
+     * "id"); el de Pago/OrdenDespacho de Oscar como "pagos"/
+     * "ordenes_despacho". Las FK de este método apuntan siempre a esas
+     * tablas reales. El catálogo de André (ventas_productos, ventas_
+     * categorias, etc.) sí sigue la convención "ventas_*" tal como la
+     * escribió él.
      */
     private static void crearTablas() throws ConexionException {
         try (Connection conexion = getConnection();
@@ -183,64 +182,63 @@ public class ConexionMySQL {
                     + ") ENGINE=InnoDB");
 
             // -- sección Factura/DetalleFactura/OrdenVenta/DetalleOrdenVenta -- (Carlos)
-            // Las FK de cliente/vendedor apuntan a las tablas reales que creó
-            // Cristofer (clientes/empleados), no a ventas_clientes/
-            // ventas_empleados como decía el documento original, porque esas
-            // no existen (ver nota de integración arriba).
+            // Nombres y columnas reales que usa su OrdenVentaDAOImpl/
+            // FacturaDAOImpl ("ordenes_venta"/"facturas", con PK "id"), no
+            // "ventas_ordenes_venta"/"ventas_facturas" como decía el
+            // documento original — esas tablas no las usaba ningún DAO.
             stmt.executeUpdate(
-                    "CREATE TABLE IF NOT EXISTS ventas_ordenes_venta ("
-                    + "id_orden_venta INT NOT NULL PRIMARY KEY,"
+                    "CREATE TABLE IF NOT EXISTS ordenes_venta ("
+                    + "id INT AUTO_INCREMENT PRIMARY KEY,"
                     + "fecha DATE NOT NULL,"
-                    + "cliente_id INT NOT NULL,"
-                    + "vendedor_id INT NOT NULL,"
-                    + "estado VARCHAR(30) NOT NULL DEFAULT 'Pendiente',"
-                    + "CONSTRAINT fk_ov_cliente FOREIGN KEY (cliente_id) REFERENCES clientes(id_cliente),"
-                    + "CONSTRAINT fk_ov_vendedor FOREIGN KEY (vendedor_id) REFERENCES empleados(id_empleado)"
-                    + ") ENGINE=InnoDB");
-
-            stmt.executeUpdate(
-                    "CREATE TABLE IF NOT EXISTS ventas_orden_venta_detalles ("
-                    + "id_detalle BIGINT AUTO_INCREMENT PRIMARY KEY,"
-                    + "orden_venta_id INT NOT NULL,"
-                    + "producto_id INT NOT NULL,"
-                    + "cantidad_solicitada INT NOT NULL,"
-                    + "precio_unitario DECIMAL(12,2) NOT NULL,"
-                    + "CONSTRAINT fk_ovd_orden FOREIGN KEY (orden_venta_id) REFERENCES ventas_ordenes_venta(id_orden_venta) ON DELETE CASCADE,"
-                    + "CONSTRAINT fk_ovd_producto FOREIGN KEY (producto_id) REFERENCES ventas_productos(id_producto)"
-                    + ") ENGINE=InnoDB");
-
-            stmt.executeUpdate(
-                    "CREATE TABLE IF NOT EXISTS ventas_facturas ("
-                    + "id_factura INT NOT NULL PRIMARY KEY,"
-                    + "orden_venta_id INT,"
-                    + "fecha DATE NOT NULL,"
-                    + "cliente_id INT NOT NULL,"
-                    + "empleado_id INT NOT NULL,"
-                    + "subtotal DECIMAL(12,2) NOT NULL,"
-                    + "impuesto DECIMAL(12,2) NOT NULL,"
+                    + "id_cliente INT NOT NULL,"
+                    + "id_empleado INT NOT NULL,"
                     + "total DECIMAL(12,2) NOT NULL,"
                     + "estado VARCHAR(30) NOT NULL DEFAULT 'Pendiente',"
-                    + "CONSTRAINT fk_factura_orden FOREIGN KEY (orden_venta_id) REFERENCES ventas_ordenes_venta(id_orden_venta),"
-                    + "CONSTRAINT fk_factura_cliente FOREIGN KEY (cliente_id) REFERENCES clientes(id_cliente),"
-                    + "CONSTRAINT fk_factura_empleado FOREIGN KEY (empleado_id) REFERENCES empleados(id_empleado)"
+                    + "CONSTRAINT fk_ov_cliente FOREIGN KEY (id_cliente) REFERENCES clientes(id_cliente),"
+                    + "CONSTRAINT fk_ov_empleado FOREIGN KEY (id_empleado) REFERENCES empleados(id_empleado)"
                     + ") ENGINE=InnoDB");
 
             stmt.executeUpdate(
-                    "CREATE TABLE IF NOT EXISTS ventas_factura_detalles ("
-                    + "id_detalle BIGINT AUTO_INCREMENT PRIMARY KEY,"
-                    + "factura_id INT NOT NULL,"
-                    + "producto_id INT NOT NULL,"
+                    "CREATE TABLE IF NOT EXISTS orden_venta_detalles ("
+                    + "id BIGINT AUTO_INCREMENT PRIMARY KEY,"
+                    + "id_orden_venta INT NOT NULL,"
+                    + "id_producto INT NOT NULL,"
                     + "cantidad INT NOT NULL,"
                     + "precio_unitario DECIMAL(12,2) NOT NULL,"
-                    + "CONSTRAINT fk_detalle_factura FOREIGN KEY (factura_id) REFERENCES ventas_facturas(id_factura) ON DELETE CASCADE,"
-                    + "CONSTRAINT fk_detalle_producto FOREIGN KEY (producto_id) REFERENCES ventas_productos(id_producto)"
+                    + "CONSTRAINT fk_ovd_orden FOREIGN KEY (id_orden_venta) REFERENCES ordenes_venta(id) ON DELETE CASCADE,"
+                    + "CONSTRAINT fk_ovd_producto FOREIGN KEY (id_producto) REFERENCES ventas_productos(id_producto)"
+                    + ") ENGINE=InnoDB");
+
+            stmt.executeUpdate(
+                    "CREATE TABLE IF NOT EXISTS facturas ("
+                    + "id INT AUTO_INCREMENT PRIMARY KEY,"
+                    + "id_orden_venta INT,"
+                    + "fecha DATE NOT NULL,"
+                    + "id_cliente INT NOT NULL,"
+                    + "id_empleado INT NOT NULL,"
+                    + "total DECIMAL(12,2) NOT NULL,"
+                    + "estado VARCHAR(30) NOT NULL DEFAULT 'Pendiente',"
+                    + "CONSTRAINT fk_factura_orden FOREIGN KEY (id_orden_venta) REFERENCES ordenes_venta(id),"
+                    + "CONSTRAINT fk_factura_cliente FOREIGN KEY (id_cliente) REFERENCES clientes(id_cliente),"
+                    + "CONSTRAINT fk_factura_empleado FOREIGN KEY (id_empleado) REFERENCES empleados(id_empleado)"
+                    + ") ENGINE=InnoDB");
+
+            stmt.executeUpdate(
+                    "CREATE TABLE IF NOT EXISTS factura_detalles ("
+                    + "id BIGINT AUTO_INCREMENT PRIMARY KEY,"
+                    + "id_factura INT NOT NULL,"
+                    + "id_producto INT NOT NULL,"
+                    + "cantidad INT NOT NULL,"
+                    + "precio_unitario DECIMAL(12,2) NOT NULL,"
+                    + "CONSTRAINT fk_fd_factura FOREIGN KEY (id_factura) REFERENCES facturas(id) ON DELETE CASCADE,"
+                    + "CONSTRAINT fk_fd_producto FOREIGN KEY (id_producto) REFERENCES ventas_productos(id_producto)"
                     + ") ENGINE=InnoDB");
 
             // -- sección Pago/OrdenDespacho/DetalleOrdenDespacho -- (Oscar)
             // Tablas reales de su PagoDAOImpl/OrdenDespachoDAOImpl (nombres y
             // columnas distintos a los que proponía el documento original).
-            // id_factura / id_orden_venta quedan sin FOREIGN KEY, tal como
-            // los dejó Oscar, porque su DAO no valida contra esas tablas.
+            // Ahora que "facturas" y "ordenes_venta" existen de verdad, se
+            // agregan las FK que Oscar había dejado sin restricción.
             stmt.executeUpdate(
                     "CREATE TABLE IF NOT EXISTS pagos ("
                     + "id_pago INT AUTO_INCREMENT PRIMARY KEY,"
@@ -249,7 +247,8 @@ public class ConexionMySQL {
                     + "monto DECIMAL(10,2) NOT NULL CHECK (monto > 0),"
                     + "tipo_pago VARCHAR(20) NOT NULL,"
                     + "referencia VARCHAR(100),"
-                    + "estado VARCHAR(20) NOT NULL DEFAULT 'COMPLETADO'"
+                    + "estado VARCHAR(20) NOT NULL DEFAULT 'COMPLETADO',"
+                    + "CONSTRAINT fk_pago_factura FOREIGN KEY (id_factura) REFERENCES facturas(id)"
                     + ") ENGINE=InnoDB");
 
             stmt.executeUpdate(
@@ -259,7 +258,8 @@ public class ConexionMySQL {
                     + "fecha_despacho TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,"
                     + "direccion_entrega VARCHAR(200) NOT NULL,"
                     + "transportista VARCHAR(100),"
-                    + "estado VARCHAR(20) NOT NULL DEFAULT 'PENDIENTE'"
+                    + "estado VARCHAR(20) NOT NULL DEFAULT 'PENDIENTE',"
+                    + "CONSTRAINT fk_od_orden FOREIGN KEY (id_orden_venta) REFERENCES ordenes_venta(id)"
                     + ") ENGINE=InnoDB");
 
             stmt.executeUpdate(

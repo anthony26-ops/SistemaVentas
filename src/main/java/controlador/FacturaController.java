@@ -3,15 +3,19 @@ package controlador;
 import dao.ClienteDAO;
 import dao.EmpleadoDAO;
 import dao.FacturaDAO;
+import dao.OrdenVentaDAO;
 import dao.ProductoDAO;
 import dao.ProductoDAOImpl;
 import dao.impl.ClienteDAOImpl;
 import dao.impl.EmpleadoDAOImpl;
 import dao.impl.FacturaDAOImpl;
+import dao.impl.OrdenVentaDAOImpl;
 import java.util.List;
 import modelo.Cliente;
+import modelo.DetalleFactura;
 import modelo.Empleado;
 import modelo.Factura;
+import modelo.OrdenVenta;
 import modelo.Producto;
 
 public class FacturaController {
@@ -20,12 +24,14 @@ public class FacturaController {
     private ClienteDAO clienteDAO;
     private EmpleadoDAO empleadoDAO;
     private ProductoDAO productoDAO;
+    private OrdenVentaDAO ordenVentaDAO;
 
     public FacturaController() {
         this.facturaDAO = new FacturaDAOImpl();
         this.clienteDAO = new ClienteDAOImpl();
         this.empleadoDAO = new EmpleadoDAOImpl();
         this.productoDAO = new ProductoDAOImpl();
+        this.ordenVentaDAO = new OrdenVentaDAOImpl();
     }
 
     public List<Cliente> obtenerClientes() {
@@ -69,8 +75,56 @@ public class FacturaController {
         factura.setEmpleado(empleado);
         
         factura.setTotal(total);
-        factura.setEstado(estado); 
-        
+        factura.setEstado(estado);
+
         return facturaDAO.registrarFactura(factura);
+    }
+
+    /**
+     * Igual que crearFactura, pero guardando también el detalle de
+     * productos (List&lt;DetalleFactura&gt;): inserta la factura, sus
+     * líneas, y descuenta la existencia de cada producto.
+     */
+    public boolean crearFactura(int idCliente, int idEmpleado, List<DetalleFactura> detalles, String estado) throws Exception {
+        if (detalles == null || detalles.isEmpty()) {
+            throw new Exception("La factura debe tener al menos un producto.");
+        }
+
+        double total = 0;
+        for (DetalleFactura d : detalles) {
+            total += d.getSubtotal();
+        }
+
+        Factura factura = new Factura();
+        factura.setFecha(new java.sql.Date(System.currentTimeMillis()));
+
+        Cliente cliente = new Cliente();
+        cliente.setId(idCliente);
+        factura.setCliente(cliente);
+
+        Empleado empleado = new Empleado();
+        empleado.setId(idEmpleado);
+        factura.setEmpleado(empleado);
+
+        factura.setDetalles(detalles);
+        factura.setTotal(total);
+        factura.setEstado(estado);
+
+        return facturaDAO.registrarFactura(factura);
+    }
+
+    /** Órdenes de venta listas para facturar (estado "Pendiente"). */
+    public List<OrdenVenta> listarOrdenesPendientes() {
+        return ordenVentaDAO.listarPendientes();
+    }
+
+    /**
+     * Genera la factura a partir de una OrdenVenta ya registrada: copia su
+     * detalle, descuenta inventario y marca la orden como "Facturada".
+     */
+    public Factura generarFacturaDesdeOrden(int idOrdenVenta) {
+        OrdenVenta orden = new OrdenVenta();
+        orden.setIdOrdenVenta(idOrdenVenta);
+        return facturaDAO.generarFacturaDesdeOrden(orden);
     }
 }

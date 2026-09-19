@@ -14,28 +14,70 @@ public class PagoDAOImpl implements PagoDAO {
     public boolean insertar(Pago pago) {
         String sql = "INSERT INTO pagos (id_factura, fecha, monto, tipo_pago, referencia, estado) "
                    + "VALUES (?, ?, ?, ?, ?, ?)";
-        try (Connection cn = ConexionMySQL.getConnection();
-             PreparedStatement ps = cn.prepareStatement(sql, Statement.RETURN_GENERATED_KEYS)) {
+        try (Connection cn = ConexionMySQL.getConnection()) {
+            cn.setAutoCommit(false);
 
-            ps.setInt(1, pago.getIdFactura());
-            ps.setTimestamp(2, new Timestamp(pago.getFecha().getTime()));
-            ps.setDouble(3, pago.getMonto());
-            ps.setString(4, pago.getTipoPago());
-            ps.setString(5, pago.getReferencia());
-            ps.setString(6, pago.getEstado());
+            try (PreparedStatement ps = cn.prepareStatement(sql, Statement.RETURN_GENERATED_KEYS)) {
+                ps.setInt(1, pago.getIdFactura());
+                ps.setTimestamp(2, new Timestamp(pago.getFecha().getTime()));
+                ps.setDouble(3, pago.getMonto());
+                ps.setString(4, pago.getTipoPago());
+                ps.setString(5, pago.getReferencia());
+                ps.setString(6, pago.getEstado());
 
-            if (ps.executeUpdate() == 0) {
-                return false;
-            }
-            try (ResultSet generado = ps.getGeneratedKeys()) {
-                if (generado.next()) {
-                    pago.setIdPago(generado.getInt(1));
+                if (ps.executeUpdate() == 0) {
+                    return false;
+                }
+                try (ResultSet generado = ps.getGeneratedKeys()) {
+                    if (generado.next()) {
+                        pago.setIdPago(generado.getInt(1));
+                    }
                 }
             }
+
+            actualizarEstadoFacturaSiCompleta(cn, pago.getIdFactura());
+
+            cn.commit();
             return true;
         } catch (SQLException | ConexionException e) {
             e.printStackTrace();
             return false;
+        }
+    }
+
+    /**
+     * Si la suma de pagos (no anulados) de la factura alcanza o supera su
+     * total, marca la factura como "Pagada".
+     */
+    private void actualizarEstadoFacturaSiCompleta(Connection cn, int idFactura) throws SQLException {
+        double total = 0;
+        double pagado = 0;
+
+        try (PreparedStatement ps = cn.prepareStatement("SELECT total FROM facturas WHERE id = ?")) {
+            ps.setInt(1, idFactura);
+            try (ResultSet rs = ps.executeQuery()) {
+                if (!rs.next()) {
+                    return; // la factura no existe (o el catálogo usa otro id)
+                }
+                total = rs.getDouble("total");
+            }
+        }
+
+        try (PreparedStatement ps = cn.prepareStatement(
+                "SELECT COALESCE(SUM(monto), 0) AS total FROM pagos WHERE id_factura = ? AND estado <> 'ANULADO'")) {
+            ps.setInt(1, idFactura);
+            try (ResultSet rs = ps.executeQuery()) {
+                if (rs.next()) {
+                    pagado = rs.getDouble("total");
+                }
+            }
+        }
+
+        if (pagado >= total) {
+            try (PreparedStatement ps = cn.prepareStatement("UPDATE facturas SET estado = 'Pagada' WHERE id = ?")) {
+                ps.setInt(1, idFactura);
+                ps.executeUpdate();
+            }
         }
     }
 

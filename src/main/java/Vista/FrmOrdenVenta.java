@@ -1,5 +1,8 @@
 package Vista;
 
+import modelo.DetalleOrdenVenta;
+import modelo.Producto;
+
 /**
  *
  * @author Aramis Ramos
@@ -8,6 +11,8 @@ public class FrmOrdenVenta extends javax.swing.JFrame {
 
     private static final java.util.logging.Logger logger = java.util.logging.Logger.getLogger(FrmOrdenVenta.class.getName());
     private final controlador.OrdenVentaController controller = new controlador.OrdenVentaController();
+    private final java.util.List<DetalleOrdenVenta> detallesActuales = new java.util.ArrayList<>();
+    private final java.util.Map<String, Producto> productosPorNombre = new java.util.HashMap<>();
 
     /**
      * Creates new form FrmOrdenVenta
@@ -24,19 +29,21 @@ public class FrmOrdenVenta extends javax.swing.JFrame {
     private void cargarCombos() {
         javax.swing.DefaultComboBoxModel<String> modeloClientes = new javax.swing.DefaultComboBoxModel<>();
         for (modelo.Cliente c : controller.obtenerClientes()) {
-            modeloClientes.addElement(c.getId() + " - " + c.getNombre() + " " + c.getApellido());
+            modeloClientes.addElement(c.getIdCliente() + " - " + c.getNombre() + " " + c.getApellido());
         }
         cbxCliente.setModel(modeloClientes);
 
         javax.swing.DefaultComboBoxModel<String> modeloEmpleados = new javax.swing.DefaultComboBoxModel<>();
         for (modelo.Empleado e : controller.obtenerEmpleados()) {
-            modeloEmpleados.addElement(e.getId() + " - " + e.getNombre() + " " + e.getApellido());
+            modeloEmpleados.addElement(e.getIdEmpleado() + " - " + e.getNombre() + " " + e.getApellido());
         }
         cbxEmpleado.setModel(modeloEmpleados);
 
         javax.swing.DefaultComboBoxModel<String> modeloProductos = new javax.swing.DefaultComboBoxModel<>();
+        productosPorNombre.clear();
         for (modelo.Producto p : controller.obtenerProductos()) {
             modeloProductos.addElement(p.getNombre());
+            productosPorNombre.put(p.getNombre(), p);
         }
         cbxProducto.setModel(modeloProductos);
     }
@@ -249,12 +256,11 @@ public class FrmOrdenVenta extends javax.swing.JFrame {
     // Extraer datos de la pantalla
     int idCliente = idDesdeItemCombo(cbxCliente.getSelectedItem());
     int idEmpleado = idDesdeItemCombo(cbxEmpleado.getSelectedItem());
-    String textoTotal = lblTotal.getText().replace("Total: Q", "").trim();
-    double total = Double.parseDouble(textoTotal);
     String estado = "Pendiente"; // Nuevo campo obligatorio
 
-    // Llamar a crearPedido con el controlador puro (sin dependencias de Swing)
-    boolean exito = controller.crearPedido(idCliente, idEmpleado, total, estado);
+    // Llamar a crearPedido con el controlador puro (sin dependencias de Swing),
+    // guardando también el detalle real de productos.
+    boolean exito = controller.crearPedido(idCliente, idEmpleado, detallesActuales, estado);
     
     if (exito) {
         javax.swing.JOptionPane.showMessageDialog(this, "¡Orden registrada con éxito!");
@@ -282,13 +288,20 @@ public class FrmOrdenVenta extends javax.swing.JFrame {
     // 4. Agregar los datos a la tabla
     javax.swing.table.DefaultTableModel modelo = (javax.swing.table.DefaultTableModel) tblDetalles.getModel();
     modelo.addRow(new Object[]{
-        modelo.getRowCount() + 1, 
+        modelo.getRowCount() + 1,
         producto,
         cantidad,
         precioUnitario,
         subtotal
     });
-    
+
+    // 4b. Guardar la línea real (con el Producto completo) para poder
+    // persistirla junto con la orden.
+    Producto productoSeleccionado = productosPorNombre.get(producto);
+    if (productoSeleccionado != null) {
+        detallesActuales.add(new DetalleOrdenVenta(0, null, productoSeleccionado, cantidad, precioUnitario));
+    }
+
     // 5. Recalcular el total general sumando la columna de subtotales (índice 4)
     double sumaTotal = 0;
     for (int i = 0; i < modelo.getRowCount(); i++) {
@@ -319,6 +332,7 @@ public class FrmOrdenVenta extends javax.swing.JFrame {
 
     javax.swing.table.DefaultTableModel modelo = (javax.swing.table.DefaultTableModel) tblDetalles.getModel();
     modelo.setRowCount(0);
+    detallesActuales.clear();
     }//GEN-LAST:event_btnLimpiarActionPerformed
 
     /**

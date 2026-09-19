@@ -1,5 +1,8 @@
 package Vista;
 
+import modelo.DetalleFactura;
+import modelo.Producto;
+
 /**
  *
  * @author Aramis Ramos
@@ -8,6 +11,8 @@ public class FrmFacturacion extends javax.swing.JFrame {
 
     private static final java.util.logging.Logger logger = java.util.logging.Logger.getLogger(FrmFacturacion.class.getName());
     private final controlador.FacturaController controller = new controlador.FacturaController();
+    private final java.util.List<DetalleFactura> detallesActuales = new java.util.ArrayList<>();
+    private final java.util.Map<String, Producto> productosPorNombre = new java.util.HashMap<>();
 
     /**
      * Creates new form FrmFacturacion
@@ -24,19 +29,21 @@ public class FrmFacturacion extends javax.swing.JFrame {
     private void cargarCombos() {
         javax.swing.DefaultComboBoxModel<String> modeloClientes = new javax.swing.DefaultComboBoxModel<>();
         for (modelo.Cliente c : controller.obtenerClientes()) {
-            modeloClientes.addElement(c.getId() + " - " + c.getNombre() + " " + c.getApellido());
+            modeloClientes.addElement(c.getIdCliente() + " - " + c.getNombre() + " " + c.getApellido());
         }
         cbxCliente.setModel(modeloClientes);
 
         javax.swing.DefaultComboBoxModel<String> modeloEmpleados = new javax.swing.DefaultComboBoxModel<>();
         for (modelo.Empleado e : controller.obtenerEmpleados()) {
-            modeloEmpleados.addElement(e.getId() + " - " + e.getNombre() + " " + e.getApellido());
+            modeloEmpleados.addElement(e.getIdEmpleado() + " - " + e.getNombre() + " " + e.getApellido());
         }
         cbxEmpleado.setModel(modeloEmpleados);
 
         javax.swing.DefaultComboBoxModel<String> modeloProductos = new javax.swing.DefaultComboBoxModel<>();
+        productosPorNombre.clear();
         for (modelo.Producto p : controller.obtenerProductos()) {
             modeloProductos.addElement(p.getNombre());
+            productosPorNombre.put(p.getNombre(), p);
         }
         cbxProducto.setModel(modeloProductos);
     }
@@ -260,13 +267,13 @@ public class FrmFacturacion extends javax.swing.JFrame {
     // Extraer datos de la pantalla
     int idCliente = idDesdeItemCombo(cbxCliente.getSelectedItem());
     int idEmpleado = idDesdeItemCombo(cbxEmpleado.getSelectedItem());
-    String textoTotal = lblTotal.getText().replace("Total: Q", "").trim();
-    double total = Double.parseDouble(textoTotal);
 
     // El estado inicial de la factura (cumpliendo el Punto 1)
     String estado = "Emitida";
 
-    boolean exito = controller.crearFactura(idCliente, idEmpleado, total, estado);
+    // Guarda la factura con su detalle real de productos (inserta las
+    // líneas y descuenta existencia de cada producto).
+    boolean exito = controller.crearFactura(idCliente, idEmpleado, detallesActuales, estado);
 
     if (exito) {
         javax.swing.JOptionPane.showMessageDialog(this, "¡Factura guardada con éxito!");
@@ -302,6 +309,17 @@ public class FrmFacturacion extends javax.swing.JFrame {
             subtotal
         });
 
+        // Guardar la línea real (con el Producto completo) para poder
+        // persistirla junto con la factura.
+        Producto productoSeleccionado = productosPorNombre.get(producto);
+        if (productoSeleccionado != null) {
+            DetalleFactura detalle = new DetalleFactura();
+            detalle.setProducto(productoSeleccionado);
+            detalle.setPrecioUnitario(precioUnitario);
+            detalle.setCantidad(cantidad);
+            detallesActuales.add(detalle);
+        }
+
         double sumaTotal = 0;
         for (int i = 0; i < modelo.getRowCount(); i++) {
             sumaTotal += Double.parseDouble(modelo.getValueAt(i, 4).toString());
@@ -331,6 +349,7 @@ public class FrmFacturacion extends javax.swing.JFrame {
     // Vaciar la tabla
     javax.swing.table.DefaultTableModel modelo = (javax.swing.table.DefaultTableModel) tblDetalles.getModel();
     modelo.setRowCount(0);
+    detallesActuales.clear();
     }//GEN-LAST:event_btnLimpiarActionPerformed
 
     /**
