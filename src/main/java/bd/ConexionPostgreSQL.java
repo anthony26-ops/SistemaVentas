@@ -124,7 +124,45 @@ stmt.executeUpdate(
 );
             // -- sección Producto/Categoria/Inventario/Proveedor -- (André)
             // -- sección Factura/DetalleFactura -- (Carlos)
-            // -- sección Pago -- (Oscar)
+            // -- sección Pago / Orden de Despacho -- (Oscar)
+            // Tabla de pagos aplicados a una factura
+            stmt.executeUpdate(
+                "CREATE TABLE IF NOT EXISTS pagos (" +
+                "id_pago SERIAL PRIMARY KEY, " +
+                "id_factura INT NOT NULL, " +
+                "fecha TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP, " +
+                "monto NUMERIC(10,2) NOT NULL CHECK (monto > 0), " +
+                "tipo_pago VARCHAR(20) NOT NULL, " +
+                "referencia VARCHAR(100), " +
+                "estado VARCHAR(20) NOT NULL DEFAULT 'COMPLETADO'" +
+                ");"
+            );
+
+            // Tabla de ordenes de despacho
+            stmt.executeUpdate(
+                "CREATE TABLE IF NOT EXISTS ordenes_despacho (" +
+                "id_orden_despacho SERIAL PRIMARY KEY, " +
+                "id_orden_venta INT NOT NULL, " +
+                "fecha_despacho TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP, " +
+                "direccion_entrega VARCHAR(200) NOT NULL, " +
+                "transportista VARCHAR(100), " +
+                "estado VARCHAR(20) NOT NULL DEFAULT 'PENDIENTE'" +
+                ");"
+            );
+
+            // Tabla de detalle de la orden de despacho
+            stmt.executeUpdate(
+                "CREATE TABLE IF NOT EXISTS detalle_orden_despacho (" +
+                "id_detalle_despacho SERIAL PRIMARY KEY, " +
+                "id_orden_despacho INT NOT NULL REFERENCES ordenes_despacho(id_orden_despacho) ON DELETE CASCADE, " +
+                "id_producto INT NOT NULL, " +
+                "nombre_producto VARCHAR(100) NOT NULL, " +
+                "cantidad INT NOT NULL CHECK (cantidad > 0)" +
+                ");"
+            );
+            // Nota: id_factura e id_orden_venta quedan como INT simple (sin FOREIGN KEY)
+            // mientras el modulo de Facturacion / Orden de Venta no cree sus tablas.
+
 
         } catch (SQLException e) {
             throw new ConexionException("No se pudieron crear las tablas del sistema", e);
