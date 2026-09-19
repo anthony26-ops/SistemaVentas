@@ -78,6 +78,7 @@ public class FrmOrdenVenta extends javax.swing.JFrame {
         cbxProducto.setModel(new javax.swing.DefaultComboBoxModel<>(new String[] { "Item 1", "Item 2", "Item 3", "Item 4" }));
 
         btnAgregar.setText("Agregar");
+        btnAgregar.addActionListener(this::btnAgregarActionPerformed);
 
         tblDetalles.setModel(new javax.swing.table.DefaultTableModel(
             new Object [][] {
@@ -107,6 +108,7 @@ public class FrmOrdenVenta extends javax.swing.JFrame {
         btnGuardar.addActionListener(this::btnGuardarActionPerformed);
 
         btnLimpiar.setText("Limpiar");
+        btnLimpiar.addActionListener(this::btnLimpiarActionPerformed);
 
         javax.swing.GroupLayout jPanel1Layout = new javax.swing.GroupLayout(jPanel1);
         jPanel1.setLayout(jPanel1Layout);
@@ -115,12 +117,11 @@ public class FrmOrdenVenta extends javax.swing.JFrame {
             .addGroup(jPanel1Layout.createSequentialGroup()
                 .addGroup(jPanel1Layout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
                     .addGroup(jPanel1Layout.createSequentialGroup()
+                        .addGap(18, 18, 18)
                         .addGroup(jPanel1Layout.createParallelGroup(javax.swing.GroupLayout.Alignment.TRAILING)
                             .addComponent(jLabel5)
                             .addComponent(jLabel4)
-                            .addGroup(jPanel1Layout.createSequentialGroup()
-                                .addGap(36, 36, 36)
-                                .addComponent(jLabel1)))
+                            .addComponent(jLabel1))
                         .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED)
                         .addGroup(jPanel1Layout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
                             .addGroup(jPanel1Layout.createSequentialGroup()
@@ -202,8 +203,88 @@ public class FrmOrdenVenta extends javax.swing.JFrame {
     }// </editor-fold>//GEN-END:initComponents
 
     private void btnGuardarActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_btnGuardarActionPerformed
-        // TODO add your handling code here:
+        // Ejemplo para el botón Guardar en tu FrmOrdenVenta.java
+    try {
+    if (tblDetalles.getRowCount() == 0) {
+        javax.swing.JOptionPane.showMessageDialog(this, "Debe agregar productos.");
+        return;
+    }
+    
+    // Extraer datos de la pantalla
+    int idCliente = cbxCliente.getSelectedIndex() + 1; // Ajusta según cómo manejes los IDs
+    int idEmpleado = cbxEmpleado.getSelectedIndex() + 1;
+    String textoTotal = lblTotal.getText().replace("Total: Q", "").trim();
+    double total = Double.parseDouble(textoTotal);
+    String estado = "Pendiente"; // Nuevo campo obligatorio
+    
+    // Instanciar el controlador puro y llamar a crearPedido
+    controlador.OrdenVentaController controller = new controlador.OrdenVentaController();
+    boolean exito = controller.crearPedido(idCliente, idEmpleado, total, estado);
+    
+    if (exito) {
+        javax.swing.JOptionPane.showMessageDialog(this, "¡Orden registrada con éxito!");
+        btnLimpiar.doClick();
+    } else {
+        javax.swing.JOptionPane.showMessageDialog(this, "Error al registrar la orden.");
+    }
+}   catch (Exception ex) {
+    javax.swing.JOptionPane.showMessageDialog(this, ex.getMessage());
+}
     }//GEN-LAST:event_btnGuardarActionPerformed
+
+    private void btnAgregarActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_btnAgregarActionPerformed
+        try {
+    // 1. Obtener el producto y la cantidad desde los componentes de la ventana
+    String producto = cbxProducto.getSelectedItem().toString();
+    int cantidad = (Integer) spnCantidad.getValue();
+    
+    // 2. Usar el controlador para obtener el precio dinámico (¡Adiós a los 150.00 fijos!)
+    controlador.OrdenVentaController controller = new controlador.OrdenVentaController();
+    double precioUnitario = controller.obtenerPrecioProducto(producto); 
+    
+    // 3. Calcular el subtotal
+    double subtotal = cantidad * precioUnitario;
+    
+    // 4. Agregar los datos a la tabla
+    javax.swing.table.DefaultTableModel modelo = (javax.swing.table.DefaultTableModel) tblDetalles.getModel();
+    modelo.addRow(new Object[]{
+        modelo.getRowCount() + 1, 
+        producto,
+        cantidad,
+        precioUnitario,
+        subtotal
+    });
+    
+    // 5. Recalcular el total general sumando la columna de subtotales (índice 4)
+    double sumaTotal = 0;
+    for (int i = 0; i < modelo.getRowCount(); i++) {
+        sumaTotal += Double.parseDouble(modelo.getValueAt(i, 4).toString()); 
+    }
+    
+    // 6. Actualizar la etiqueta del total en pantalla
+    lblTotal.setText(String.format("Total: Q%.2f", sumaTotal));
+    
+} catch (Exception ex) {
+    javax.swing.JOptionPane.showMessageDialog(this, 
+        "Error al agregar el producto: " + ex.getMessage(), 
+        "Error", 
+        javax.swing.JOptionPane.ERROR_MESSAGE);
+}
+    }//GEN-LAST:event_btnAgregarActionPerformed
+
+    private void btnLimpiarActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_btnLimpiarActionPerformed
+        if (cbxCliente.getItemCount() > 0) {
+    cbxCliente.setSelectedIndex(0);
+}
+    if (cbxEmpleado.getItemCount() > 0) {
+    cbxEmpleado.setSelectedIndex(0);
+}
+
+    lblTotal.setText("Total: Q0.00");
+
+    javax.swing.table.DefaultTableModel modelo = (javax.swing.table.DefaultTableModel) tblDetalles.getModel();
+    modelo.setRowCount(0);
+    }//GEN-LAST:event_btnLimpiarActionPerformed
 
     /**
      * @param args the command line arguments
