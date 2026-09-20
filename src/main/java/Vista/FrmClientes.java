@@ -82,6 +82,7 @@ public class FrmClientes extends JInternalFrame {
         setIconifiable(true);
         setMaximizable(true);
         setResizable(true);
+        setTitle("Clientes");
 
         javax.swing.GroupLayout jDesktopPane1Layout = new javax.swing.GroupLayout(jDesktopPane1);
         jDesktopPane1.setLayout(jDesktopPane1Layout);
@@ -250,22 +251,30 @@ public class FrmClientes extends JInternalFrame {
     }//GEN-LAST:event_btnGuardarActionPerformed
 
     private void btnActualizarActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_btnActualizarActionPerformed
-          if (txtId.getText().isEmpty()) return;
-        int id = Integer.parseInt(txtId.getText());
-        if (controller.modificarCliente(id, txtNombre.getText(), txtApellido.getText(), txtTelefono.getText(), txtEmail.getText(), txtNit.getText())) {
-            JOptionPane.showMessageDialog(this, "Cliente actualizado.");
-            cargarTabla();
-            limpiarCampos();
+        if (txtId.getText().isEmpty()) return;
+        try {
+            int id = Integer.parseInt(txtId.getText().trim());
+            if (controller.modificarCliente(id, txtNombre.getText(), txtApellido.getText(), txtTelefono.getText(), txtEmail.getText(), txtNit.getText())) {
+                JOptionPane.showMessageDialog(this, "Cliente actualizado.");
+                cargarTabla();
+                limpiarCampos();
+            }
+        } catch (NumberFormatException ex) {
+            JOptionPane.showMessageDialog(this, "El ID debe ser numérico.", "Error", JOptionPane.ERROR_MESSAGE);
         }
     }//GEN-LAST:event_btnActualizarActionPerformed
 
     private void btnEliminarActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_btnEliminarActionPerformed
-if (txtId.getText().isEmpty()) return;
-        int id = Integer.parseInt(txtId.getText());
-        if (controller.borrarCliente(id)) {
-            JOptionPane.showMessageDialog(this, "Cliente eliminado.");
-            cargarTabla();
-            limpiarCampos();
+        if (txtId.getText().isEmpty()) return;
+        try {
+            int id = Integer.parseInt(txtId.getText().trim());
+            if (controller.borrarCliente(id)) {
+                JOptionPane.showMessageDialog(this, "Cliente eliminado.");
+                cargarTabla();
+                limpiarCampos();
+            }
+        } catch (NumberFormatException ex) {
+            JOptionPane.showMessageDialog(this, "El ID debe ser numérico.", "Error", JOptionPane.ERROR_MESSAGE);
         }
     }//GEN-LAST:event_btnEliminarActionPerformed
 

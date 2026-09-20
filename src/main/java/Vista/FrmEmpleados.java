@@ -54,6 +54,11 @@ public class FrmEmpleados extends JInternalFrame {
         txtEmail.setText("");
         txtPuesto.setText("");
         txtSalario.setText("");
+        chkVendedor.setSelected(false);
+        txtZonaVenta.setText("");
+        txtZonaVenta.setEnabled(false);
+        txtMetaMensual.setText("");
+        txtMetaMensual.setEnabled(false);
     }
 
     /**
@@ -86,6 +91,17 @@ public class FrmEmpleados extends JInternalFrame {
         txtEmail = new javax.swing.JTextField();
         txtPuesto = new javax.swing.JTextField();
         txtSalario = new javax.swing.JTextField();
+        chkVendedor = new javax.swing.JCheckBox();
+        jLabel9 = new javax.swing.JLabel();
+        txtZonaVenta = new javax.swing.JTextField();
+        jLabel10 = new javax.swing.JLabel();
+        txtMetaMensual = new javax.swing.JTextField();
+
+        setClosable(true);
+        setIconifiable(true);
+        setMaximizable(true);
+        setResizable(true);
+        setTitle("Empleados");
 
         javax.swing.GroupLayout jDesktopPane1Layout = new javax.swing.GroupLayout(jDesktopPane1);
         jDesktopPane1.setLayout(jDesktopPane1Layout);
@@ -142,6 +158,15 @@ public class FrmEmpleados extends JInternalFrame {
 
         txtPuesto.addActionListener(this::txtPuestoActionPerformed);
 
+        chkVendedor.setText("Es vendedor");
+        chkVendedor.addActionListener(this::chkVendedorActionPerformed);
+
+        jLabel9.setText("Zona de venta :");
+        jLabel10.setText("Meta mensual :");
+
+        txtZonaVenta.setEnabled(false);
+        txtMetaMensual.setEnabled(false);
+
         javax.swing.GroupLayout layout = new javax.swing.GroupLayout(getContentPane());
         getContentPane().setLayout(layout);
         layout.setHorizontalGroup(
@@ -193,6 +218,18 @@ public class FrmEmpleados extends JInternalFrame {
                     .addGroup(layout.createSequentialGroup()
                         .addComponent(jLabel1, javax.swing.GroupLayout.PREFERRED_SIZE, 625, javax.swing.GroupLayout.PREFERRED_SIZE)
                         .addGap(0, 0, Short.MAX_VALUE))
+                    .addGroup(layout.createSequentialGroup()
+                        .addContainerGap()
+                        .addComponent(chkVendedor)
+                        .addGap(18, 18, 18)
+                        .addComponent(jLabel9)
+                        .addGap(6, 6, 6)
+                        .addComponent(txtZonaVenta, javax.swing.GroupLayout.PREFERRED_SIZE, 120, javax.swing.GroupLayout.PREFERRED_SIZE)
+                        .addGap(18, 18, 18)
+                        .addComponent(jLabel10)
+                        .addGap(6, 6, 6)
+                        .addComponent(txtMetaMensual, javax.swing.GroupLayout.PREFERRED_SIZE, 120, javax.swing.GroupLayout.PREFERRED_SIZE)
+                        .addGap(0, 0, Short.MAX_VALUE))
                     .addComponent(jScrollPane1))
                 .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED)
                 .addComponent(jDesktopPane1))
@@ -227,6 +264,13 @@ public class FrmEmpleados extends JInternalFrame {
                 .addGroup(layout.createParallelGroup(javax.swing.GroupLayout.Alignment.BASELINE)
                     .addComponent(jLabel5)
                     .addComponent(txtTelefono, javax.swing.GroupLayout.PREFERRED_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.PREFERRED_SIZE))
+                .addGap(18, 18, 18)
+                .addGroup(layout.createParallelGroup(javax.swing.GroupLayout.Alignment.BASELINE)
+                    .addComponent(chkVendedor)
+                    .addComponent(jLabel9)
+                    .addComponent(txtZonaVenta, javax.swing.GroupLayout.PREFERRED_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.PREFERRED_SIZE)
+                    .addComponent(jLabel10)
+                    .addComponent(txtMetaMensual, javax.swing.GroupLayout.PREFERRED_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.PREFERRED_SIZE))
                 .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.UNRELATED)
                 .addComponent(jScrollPane1, javax.swing.GroupLayout.PREFERRED_SIZE, 242, javax.swing.GroupLayout.PREFERRED_SIZE))
         );
@@ -235,24 +279,69 @@ public class FrmEmpleados extends JInternalFrame {
     }// </editor-fold>//GEN-END:initComponents
 
     private void btnGuardarActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_btnGuardarActionPerformed
-       double salario = Double.parseDouble(txtSalario.getText());
-        if (controller.guardarEmpleado(txtNombre.getText(), txtApellido.getText(), txtTelefono.getText(), txtEmail.getText(), txtPuesto.getText(), salario)) {
-            JOptionPane.showMessageDialog(this, "Empleado guardado.");
-            cargarTabla();
-            limpiarCampos();
+        if (txtNombre.getText().trim().isEmpty() || txtApellido.getText().trim().isEmpty()
+                || txtSalario.getText().trim().isEmpty()) {
+            JOptionPane.showMessageDialog(this, "Complete nombre, apellido y salario.");
+            return;
+        }
+        try {
+            double salario = Double.parseDouble(txtSalario.getText().trim());
+            boolean guardado;
+            if (chkVendedor.isSelected()) {
+                double meta = txtMetaMensual.getText().trim().isEmpty() ? 0 : Double.parseDouble(txtMetaMensual.getText().trim());
+                guardado = controller.guardarVendedor(txtNombre.getText(), txtApellido.getText(), txtTelefono.getText(),
+                        txtEmail.getText(), txtPuesto.getText(), salario, txtZonaVenta.getText(), meta);
+            } else {
+                guardado = controller.guardarEmpleado(txtNombre.getText(), txtApellido.getText(), txtTelefono.getText(), txtEmail.getText(), txtPuesto.getText(), salario);
+            }
+            if (guardado) {
+                JOptionPane.showMessageDialog(this, "Empleado guardado.");
+                cargarTabla();
+                limpiarCampos();
+            } else {
+                JOptionPane.showMessageDialog(this, "Error al guardar el empleado.", "Error", JOptionPane.ERROR_MESSAGE);
+            }
+        } catch (NumberFormatException ex) {
+            JOptionPane.showMessageDialog(this, "Salario y meta mensual deben ser números válidos.",
+                    "Error", JOptionPane.ERROR_MESSAGE);
         }
     }//GEN-LAST:event_btnGuardarActionPerformed
 
     private void btnActualizarActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_btnActualizarActionPerformed
-      if (txtId.getText().isEmpty()) return;
-        int id = Integer.parseInt(txtId.getText());
-        double salario = Double.parseDouble(txtSalario.getText());
-        if (controller.modificarEmpleado(id, txtNombre.getText(), txtApellido.getText(), txtTelefono.getText(), txtEmail.getText(), txtPuesto.getText(), salario)) {
-            JOptionPane.showMessageDialog(this, "Empleado actualizado.");
-            cargarTabla();
-            limpiarCampos();
+        if (txtId.getText().isEmpty()) return;
+        try {
+            int id = Integer.parseInt(txtId.getText().trim());
+            double salario = Double.parseDouble(txtSalario.getText().trim());
+            boolean actualizado;
+            if (chkVendedor.isSelected()) {
+                double meta = txtMetaMensual.getText().trim().isEmpty() ? 0 : Double.parseDouble(txtMetaMensual.getText().trim());
+                actualizado = controller.modificarVendedor(id, txtNombre.getText(), txtApellido.getText(), txtTelefono.getText(),
+                        txtEmail.getText(), txtPuesto.getText(), salario, txtZonaVenta.getText(), meta);
+            } else {
+                actualizado = controller.modificarEmpleado(id, txtNombre.getText(), txtApellido.getText(), txtTelefono.getText(), txtEmail.getText(), txtPuesto.getText(), salario);
+            }
+            if (actualizado) {
+                JOptionPane.showMessageDialog(this, "Empleado actualizado.");
+                cargarTabla();
+                limpiarCampos();
+            } else {
+                JOptionPane.showMessageDialog(this, "Error al actualizar el empleado.", "Error", JOptionPane.ERROR_MESSAGE);
+            }
+        } catch (NumberFormatException ex) {
+            JOptionPane.showMessageDialog(this, "ID, salario y meta mensual deben ser números válidos.",
+                    "Error", JOptionPane.ERROR_MESSAGE);
         }
     }//GEN-LAST:event_btnActualizarActionPerformed
+
+    private void chkVendedorActionPerformed(java.awt.event.ActionEvent evt) {
+        boolean esVendedor = chkVendedor.isSelected();
+        txtZonaVenta.setEnabled(esVendedor);
+        txtMetaMensual.setEnabled(esVendedor);
+        if (!esVendedor) {
+            txtZonaVenta.setText("");
+            txtMetaMensual.setText("");
+        }
+    }
 
     private void txtNombreActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_txtNombreActionPerformed
         // TODO add your handling code here:
@@ -263,12 +352,16 @@ public class FrmEmpleados extends JInternalFrame {
     }//GEN-LAST:event_txtPuestoActionPerformed
 
     private void btnEliminarActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_btnEliminarActionPerformed
-  if (txtId.getText().isEmpty()) return;
-        int id = Integer.parseInt(txtId.getText());
-        if (controller.borrarEmpleado(id)) {
-            JOptionPane.showMessageDialog(this, "Empleado eliminado.");
-            cargarTabla();
-            limpiarCampos();
+        if (txtId.getText().isEmpty()) return;
+        try {
+            int id = Integer.parseInt(txtId.getText().trim());
+            if (controller.borrarEmpleado(id)) {
+                JOptionPane.showMessageDialog(this, "Empleado eliminado.");
+                cargarTabla();
+                limpiarCampos();
+            }
+        } catch (NumberFormatException ex) {
+            JOptionPane.showMessageDialog(this, "El ID debe ser numérico.", "Error", JOptionPane.ERROR_MESSAGE);
         }
     }//GEN-LAST:event_btnEliminarActionPerformed
 
@@ -289,6 +382,7 @@ public class FrmEmpleados extends JInternalFrame {
     private javax.swing.JButton btnActualizar;
     private javax.swing.JButton btnEliminar;
     private javax.swing.JButton btnGuardar;
+    private javax.swing.JCheckBox chkVendedor;
     private javax.swing.JDesktopPane jDesktopPane1;
     private javax.swing.JLabel jLabel1;
     private javax.swing.JLabel jLabel2;
@@ -298,14 +392,18 @@ public class FrmEmpleados extends JInternalFrame {
     private javax.swing.JLabel jLabel6;
     private javax.swing.JLabel jLabel7;
     private javax.swing.JLabel jLabel8;
+    private javax.swing.JLabel jLabel9;
+    private javax.swing.JLabel jLabel10;
     private javax.swing.JScrollPane jScrollPane1;
     private javax.swing.JTable tablaEmpleados;
     private javax.swing.JTextField txtApellido;
     private javax.swing.JTextField txtEmail;
     private javax.swing.JTextField txtId;
+    private javax.swing.JTextField txtMetaMensual;
     private javax.swing.JTextField txtNombre;
     private javax.swing.JTextField txtPuesto;
     private javax.swing.JTextField txtSalario;
     private javax.swing.JTextField txtTelefono;
+    private javax.swing.JTextField txtZonaVenta;
     // End of variables declaration//GEN-END:variables
 }
