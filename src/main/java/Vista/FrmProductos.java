@@ -80,7 +80,7 @@ public class FrmProductos extends javax.swing.JFrame {
         ));
         jScrollPane1.setViewportView(jTable1);
 
-        setDefaultCloseOperation(javax.swing.WindowConstants.EXIT_ON_CLOSE);
+        setDefaultCloseOperation(javax.swing.WindowConstants.DISPOSE_ON_CLOSE);
         getContentPane().setLayout(new org.netbeans.lib.awtextra.AbsoluteLayout());
 
         jLabel1.setFont(new java.awt.Font("sansserif", 0, 16)); // NOI18N
@@ -206,19 +206,41 @@ public class FrmProductos extends javax.swing.JFrame {
     }//GEN-LAST:event_txtDescripcionActionPerformed
 
     private void btnGuardarActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_btnGuardarActionPerformed
-        int id = Integer.parseInt(txtId.getText());
-        String nombre = txtNombre.getText();
-        String descripcion = txtDescripcion.getText();
-        double precio = Double.parseDouble(txtPrecio.getText());
-        int existencia = Integer.parseInt(txtExistencia.getText());
-        Categoria categoria = (Categoria) cboCategoria.getSelectedItem();
-        Proveedor proveedor = (Proveedor) cboProveedor.getSelectedItem();
-        Producto p = new Producto(id, nombre, descripcion, precio, existencia, categoria, proveedor);
+        try {
+            if (txtId.getText().trim().isEmpty() || txtNombre.getText().trim().isEmpty()
+                    || txtPrecio.getText().trim().isEmpty() || txtExistencia.getText().trim().isEmpty()) {
+                javax.swing.JOptionPane.showMessageDialog(this, "Complete ID, nombre, precio y existencia.");
+                return;
+            }
 
-        ProductoController controller = new ProductoController();
-        controller.guardar(p);
-        cargarTabla();
-        // TODO add your handling code here:
+            Categoria categoria = (Categoria) cboCategoria.getSelectedItem();
+            Proveedor proveedor = (Proveedor) cboProveedor.getSelectedItem();
+            if (categoria == null || proveedor == null) {
+                javax.swing.JOptionPane.showMessageDialog(this,
+                        "Debe existir al menos una categoría y un proveedor antes de crear un producto.");
+                return;
+            }
+
+            int id = Integer.parseInt(txtId.getText().trim());
+            String nombre = txtNombre.getText().trim();
+            String descripcion = txtDescripcion.getText().trim();
+            double precio = Double.parseDouble(txtPrecio.getText().trim());
+            int existencia = Integer.parseInt(txtExistencia.getText().trim());
+            Producto p = new Producto(id, nombre, descripcion, precio, existencia, categoria, proveedor);
+
+            ProductoController controller = new ProductoController();
+            controller.guardar(p);
+            cargarTabla();
+            javax.swing.JOptionPane.showMessageDialog(this, "Producto guardado.");
+        } catch (NumberFormatException ex) {
+            javax.swing.JOptionPane.showMessageDialog(this,
+                    "ID, precio y existencia deben ser números válidos.",
+                    "Error", javax.swing.JOptionPane.ERROR_MESSAGE);
+        } catch (Exception ex) {
+            javax.swing.JOptionPane.showMessageDialog(this,
+                    "Error al guardar el producto: " + ex.getMessage(),
+                    "Error", javax.swing.JOptionPane.ERROR_MESSAGE);
+        }
     }//GEN-LAST:event_btnGuardarActionPerformed
 
     private void btnLimpiarActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_btnLimpiarActionPerformed

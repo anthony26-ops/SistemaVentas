@@ -17,18 +17,27 @@ import java.sql.*;
  */
 public class BodegaDAOImpl implements BodegaDAO{
     @Override
-    public void guardar(Bodega b) {
+    public boolean guardar(Bodega b) {
         String sql = "INSERT INTO ventas_bodegas (nombre, direccion, telefono) VALUES (?, ?, ?)";
         try (Connection con = ConexionMySQL.getConnection();
-             PreparedStatement ps = con.prepareStatement(sql)) {
+             PreparedStatement ps = con.prepareStatement(sql, Statement.RETURN_GENERATED_KEYS)) {
             ps.setString(1, b.getNombre());
             ps.setString(2, b.getDireccion());
             ps.setString(3, b.getTelefono());
-            ps.executeUpdate();
+            if (ps.executeUpdate() == 0) {
+                return false;
+            }
+            try (ResultSet keys = ps.getGeneratedKeys()) {
+                if (keys.next()) {
+                    b.setIdBodega(keys.getInt(1));
+                }
+            }
+            return true;
         } catch (SQLException | ConexionException e) {
             e.printStackTrace();
+            return false;
         }
-    }    
+    }
     @Override
     public List <Bodega> listar(){
         List<Bodega> lista = new ArrayList<>();

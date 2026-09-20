@@ -10,6 +10,6 @@ import modelo.Bodega;
  * @author garci
  */
 public interface BodegaDAO {
-    void guardar(Bodega bodega);
+    boolean guardar(Bodega bodega);
     List<Bodega> listar();
 }

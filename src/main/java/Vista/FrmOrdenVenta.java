@@ -87,7 +87,7 @@ public class FrmOrdenVenta extends javax.swing.JFrame {
         btnGuardar = new javax.swing.JButton();
         btnLimpiar = new javax.swing.JButton();
 
-        setDefaultCloseOperation(javax.swing.WindowConstants.EXIT_ON_CLOSE);
+        setDefaultCloseOperation(javax.swing.WindowConstants.DISPOSE_ON_CLOSE);
 
         javax.swing.GroupLayout jPanel2Layout = new javax.swing.GroupLayout(jPanel2);
         jPanel2.setLayout(jPanel2Layout);
@@ -274,6 +274,12 @@ public class FrmOrdenVenta extends javax.swing.JFrame {
     }//GEN-LAST:event_btnGuardarActionPerformed
 
     private void btnAgregarActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_btnAgregarActionPerformed
+        if (cbxProducto.getSelectedItem() == null) {
+            javax.swing.JOptionPane.showMessageDialog(this,
+                    "No hay productos en el catálogo todavía. Pídele a André que registre productos primero.",
+                    "Sin productos", javax.swing.JOptionPane.WARNING_MESSAGE);
+            return;
+        }
         try {
     // 1. Obtener el producto y la cantidad desde los componentes de la ventana
     String producto = cbxProducto.getSelectedItem().toString();

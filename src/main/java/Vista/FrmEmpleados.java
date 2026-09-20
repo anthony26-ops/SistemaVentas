@@ -97,6 +97,12 @@ public class FrmEmpleados extends JInternalFrame {
         jLabel10 = new javax.swing.JLabel();
         txtMetaMensual = new javax.swing.JTextField();
 
+        setClosable(true);
+        setIconifiable(true);
+        setMaximizable(true);
+        setResizable(true);
+        setTitle("Empleados");
+
         javax.swing.GroupLayout jDesktopPane1Layout = new javax.swing.GroupLayout(jDesktopPane1);
         jDesktopPane1.setLayout(jDesktopPane1Layout);
         jDesktopPane1Layout.setHorizontalGroup(
@@ -273,38 +279,57 @@ public class FrmEmpleados extends JInternalFrame {
     }// </editor-fold>//GEN-END:initComponents
 
     private void btnGuardarActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_btnGuardarActionPerformed
-       double salario = Double.parseDouble(txtSalario.getText());
-        boolean guardado;
-        if (chkVendedor.isSelected()) {
-            double meta = txtMetaMensual.getText().isEmpty() ? 0 : Double.parseDouble(txtMetaMensual.getText());
-            guardado = controller.guardarVendedor(txtNombre.getText(), txtApellido.getText(), txtTelefono.getText(),
-                    txtEmail.getText(), txtPuesto.getText(), salario, txtZonaVenta.getText(), meta);
-        } else {
-            guardado = controller.guardarEmpleado(txtNombre.getText(), txtApellido.getText(), txtTelefono.getText(), txtEmail.getText(), txtPuesto.getText(), salario);
+        if (txtNombre.getText().trim().isEmpty() || txtApellido.getText().trim().isEmpty()
+                || txtSalario.getText().trim().isEmpty()) {
+            JOptionPane.showMessageDialog(this, "Complete nombre, apellido y salario.");
+            return;
         }
-        if (guardado) {
-            JOptionPane.showMessageDialog(this, "Empleado guardado.");
-            cargarTabla();
-            limpiarCampos();
+        try {
+            double salario = Double.parseDouble(txtSalario.getText().trim());
+            boolean guardado;
+            if (chkVendedor.isSelected()) {
+                double meta = txtMetaMensual.getText().trim().isEmpty() ? 0 : Double.parseDouble(txtMetaMensual.getText().trim());
+                guardado = controller.guardarVendedor(txtNombre.getText(), txtApellido.getText(), txtTelefono.getText(),
+                        txtEmail.getText(), txtPuesto.getText(), salario, txtZonaVenta.getText(), meta);
+            } else {
+                guardado = controller.guardarEmpleado(txtNombre.getText(), txtApellido.getText(), txtTelefono.getText(), txtEmail.getText(), txtPuesto.getText(), salario);
+            }
+            if (guardado) {
+                JOptionPane.showMessageDialog(this, "Empleado guardado.");
+                cargarTabla();
+                limpiarCampos();
+            } else {
+                JOptionPane.showMessageDialog(this, "Error al guardar el empleado.", "Error", JOptionPane.ERROR_MESSAGE);
+            }
+        } catch (NumberFormatException ex) {
+            JOptionPane.showMessageDialog(this, "Salario y meta mensual deben ser números válidos.",
+                    "Error", JOptionPane.ERROR_MESSAGE);
         }
     }//GEN-LAST:event_btnGuardarActionPerformed
 
     private void btnActualizarActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_btnActualizarActionPerformed
-      if (txtId.getText().isEmpty()) return;
-        int id = Integer.parseInt(txtId.getText());
-        double salario = Double.parseDouble(txtSalario.getText());
-        boolean actualizado;
-        if (chkVendedor.isSelected()) {
-            double meta = txtMetaMensual.getText().isEmpty() ? 0 : Double.parseDouble(txtMetaMensual.getText());
-            actualizado = controller.modificarVendedor(id, txtNombre.getText(), txtApellido.getText(), txtTelefono.getText(),
-                    txtEmail.getText(), txtPuesto.getText(), salario, txtZonaVenta.getText(), meta);
-        } else {
-            actualizado = controller.modificarEmpleado(id, txtNombre.getText(), txtApellido.getText(), txtTelefono.getText(), txtEmail.getText(), txtPuesto.getText(), salario);
-        }
-        if (actualizado) {
-            JOptionPane.showMessageDialog(this, "Empleado actualizado.");
-            cargarTabla();
-            limpiarCampos();
+        if (txtId.getText().isEmpty()) return;
+        try {
+            int id = Integer.parseInt(txtId.getText().trim());
+            double salario = Double.parseDouble(txtSalario.getText().trim());
+            boolean actualizado;
+            if (chkVendedor.isSelected()) {
+                double meta = txtMetaMensual.getText().trim().isEmpty() ? 0 : Double.parseDouble(txtMetaMensual.getText().trim());
+                actualizado = controller.modificarVendedor(id, txtNombre.getText(), txtApellido.getText(), txtTelefono.getText(),
+                        txtEmail.getText(), txtPuesto.getText(), salario, txtZonaVenta.getText(), meta);
+            } else {
+                actualizado = controller.modificarEmpleado(id, txtNombre.getText(), txtApellido.getText(), txtTelefono.getText(), txtEmail.getText(), txtPuesto.getText(), salario);
+            }
+            if (actualizado) {
+                JOptionPane.showMessageDialog(this, "Empleado actualizado.");
+                cargarTabla();
+                limpiarCampos();
+            } else {
+                JOptionPane.showMessageDialog(this, "Error al actualizar el empleado.", "Error", JOptionPane.ERROR_MESSAGE);
+            }
+        } catch (NumberFormatException ex) {
+            JOptionPane.showMessageDialog(this, "ID, salario y meta mensual deben ser números válidos.",
+                    "Error", JOptionPane.ERROR_MESSAGE);
         }
     }//GEN-LAST:event_btnActualizarActionPerformed
 
@@ -327,12 +352,16 @@ public class FrmEmpleados extends JInternalFrame {
     }//GEN-LAST:event_txtPuestoActionPerformed
 
     private void btnEliminarActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_btnEliminarActionPerformed
-  if (txtId.getText().isEmpty()) return;
-        int id = Integer.parseInt(txtId.getText());
-        if (controller.borrarEmpleado(id)) {
-            JOptionPane.showMessageDialog(this, "Empleado eliminado.");
-            cargarTabla();
-            limpiarCampos();
+        if (txtId.getText().isEmpty()) return;
+        try {
+            int id = Integer.parseInt(txtId.getText().trim());
+            if (controller.borrarEmpleado(id)) {
+                JOptionPane.showMessageDialog(this, "Empleado eliminado.");
+                cargarTabla();
+                limpiarCampos();
+            }
+        } catch (NumberFormatException ex) {
+            JOptionPane.showMessageDialog(this, "El ID debe ser numérico.", "Error", JOptionPane.ERROR_MESSAGE);
         }
     }//GEN-LAST:event_btnEliminarActionPerformed
 

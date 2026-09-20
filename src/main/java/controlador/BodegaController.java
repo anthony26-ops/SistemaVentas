@@ -16,8 +16,8 @@ import java.util.List;
 public class BodegaController {
     private BodegaDAO dao = new BodegaDAOImpl();
     
-    public void guardar (Bodega b){
-        dao.guardar(b);
+    public boolean guardar (Bodega b){
+        return dao.guardar(b);
     }
     
     public List<Bodega> listar() {

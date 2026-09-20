@@ -165,7 +165,7 @@ public class ConexionMySQL {
 
             stmt.executeUpdate(
                     "CREATE TABLE IF NOT EXISTS ventas_bodegas ("
-                    + "id_bodega INT NOT NULL PRIMARY KEY,"
+                    + "id_bodega INT AUTO_INCREMENT PRIMARY KEY,"
                     + "nombre VARCHAR(100) NOT NULL,"
                     + "direccion VARCHAR(200),"
                     + "telefono VARCHAR(50)"

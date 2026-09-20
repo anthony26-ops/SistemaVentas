@@ -57,7 +57,7 @@ public class FrmBodegas extends javax.swing.JFrame {
         jScrollPane1 = new javax.swing.JScrollPane();
         tblBodegas = new javax.swing.JTable();
 
-        setDefaultCloseOperation(javax.swing.WindowConstants.EXIT_ON_CLOSE);
+        setDefaultCloseOperation(javax.swing.WindowConstants.DISPOSE_ON_CLOSE);
         getContentPane().setLayout(new org.netbeans.lib.awtextra.AbsoluteLayout());
 
         jLabel1.setFont(new java.awt.Font("sansserif", 0, 14)); // NOI18N
@@ -84,6 +84,7 @@ public class FrmBodegas extends javax.swing.JFrame {
 
         btnLimpiar.setFont(new java.awt.Font("sansserif", 0, 14)); // NOI18N
         btnLimpiar.setText("Limpiar");
+        btnLimpiar.addActionListener(this::btnLimpiarActionPerformed);
         getContentPane().add(btnLimpiar, new org.netbeans.lib.awtextra.AbsoluteConstraints(280, 180, 120, 40));
 
         tblBodegas.setModel(new javax.swing.table.DefaultTableModel(
@@ -109,22 +110,36 @@ public class FrmBodegas extends javax.swing.JFrame {
     }//GEN-LAST:event_txtDireccionActionPerformed
 
     private void btnGuardarActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_btnGuardarActionPerformed
-        String nombre = txtNombre.getText();
-        String direccion = txtDireccion.getText();
-        String telefono = txtTelefono.getText();        
+        String nombre = txtNombre.getText().trim();
+        String direccion = txtDireccion.getText().trim();
+        String telefono = txtTelefono.getText().trim();
+
+        if (nombre.isEmpty()) {
+            javax.swing.JOptionPane.showMessageDialog(this, "Debe ingresar el nombre de la bodega.");
+            return;
+        }
+
         Bodega b = new Bodega();
         b.setNombre(nombre);
         b.setDireccion(direccion);
         b.setTelefono(telefono);
-        
+
         BodegaController controller = new BodegaController();
-        controller.guardar(b);
-        
-        cargarTabla();
-        // TODO add your handling code here:
+        if (controller.guardar(b)) {
+            javax.swing.JOptionPane.showMessageDialog(this, "Bodega guardada.");
+            limpiarCampos();
+            cargarTabla();
+        } else {
+            javax.swing.JOptionPane.showMessageDialog(this, "Error al guardar la bodega.",
+                    "Error", javax.swing.JOptionPane.ERROR_MESSAGE);
+        }
     }//GEN-LAST:event_btnGuardarActionPerformed
 
     private void btnLimpiarActionPerformed(java.awt.event.ActionEvent evt) {
+        limpiarCampos();
+    }
+
+    private void limpiarCampos() {
         txtNombre.setText("");
         txtDireccion.setText("");
         txtTelefono.setText("");
