@@ -105,6 +105,8 @@ public class FrmProductos extends javax.swing.JInternalFrame {
         tblProductos = new javax.swing.JTable();
         cboCategoria = new javax.swing.JComboBox<>();
         cboProveedor = new javax.swing.JComboBox<>();
+        btnNuevaCategoria = new javax.swing.JButton();
+        btnNuevoProveedor = new javax.swing.JButton();
 
         jTable1.setModel(new javax.swing.table.DefaultTableModel(
             new Object [][] {
@@ -207,6 +209,16 @@ public class FrmProductos extends javax.swing.JInternalFrame {
         getContentPane().add(cboCategoria, new org.netbeans.lib.awtextra.AbsoluteConstraints(290, 220, 210, 30));
         getContentPane().add(cboProveedor, new org.netbeans.lib.awtextra.AbsoluteConstraints(290, 260, 210, 30));
 
+        btnNuevaCategoria.setText("+ Nueva");
+        btnNuevaCategoria.setToolTipText("Agregar una categoría nueva");
+        btnNuevaCategoria.addActionListener(this::btnNuevaCategoriaActionPerformed);
+        getContentPane().add(btnNuevaCategoria, new org.netbeans.lib.awtextra.AbsoluteConstraints(510, 220, 90, 30));
+
+        btnNuevoProveedor.setText("+ Nuevo");
+        btnNuevoProveedor.setToolTipText("Agregar un proveedor nuevo");
+        btnNuevoProveedor.addActionListener(this::btnNuevoProveedorActionPerformed);
+        getContentPane().add(btnNuevoProveedor, new org.netbeans.lib.awtextra.AbsoluteConstraints(510, 260, 90, 30));
+
         pack();
     }// </editor-fold>//GEN-END:initComponents
 
@@ -245,6 +257,46 @@ public class FrmProductos extends javax.swing.JInternalFrame {
         });
     }
     
+    private void btnNuevaCategoriaActionPerformed(java.awt.event.ActionEvent evt) {
+        String nombre = javax.swing.JOptionPane.showInputDialog(this, "Nombre de la categoría:", "Nueva categoría",
+                javax.swing.JOptionPane.PLAIN_MESSAGE);
+        if (nombre == null || nombre.trim().isEmpty()) {
+            return;
+        }
+        String descripcion = javax.swing.JOptionPane.showInputDialog(this, "Descripción (opcional):",
+                "Nueva categoría", javax.swing.JOptionPane.PLAIN_MESSAGE);
+        Categoria creada = new ProductoController().guardarCategoria(nombre.trim(),
+                descripcion == null ? "" : descripcion.trim());
+        if (creada == null) {
+            javax.swing.JOptionPane.showMessageDialog(this, "No se pudo guardar la categoría.",
+                    "Error", javax.swing.JOptionPane.ERROR_MESSAGE);
+            return;
+        }
+        cargarCombos();
+        seleccionarPorId(cboCategoria, creada.getIdCategoria());
+    }
+
+    private void btnNuevoProveedorActionPerformed(java.awt.event.ActionEvent evt) {
+        String nombreEmpresa = javax.swing.JOptionPane.showInputDialog(this, "Nombre de la empresa:",
+                "Nuevo proveedor", javax.swing.JOptionPane.PLAIN_MESSAGE);
+        if (nombreEmpresa == null || nombreEmpresa.trim().isEmpty()) {
+            return;
+        }
+        String telefono = javax.swing.JOptionPane.showInputDialog(this, "Teléfono (opcional):",
+                "Nuevo proveedor", javax.swing.JOptionPane.PLAIN_MESSAGE);
+        String direccion = javax.swing.JOptionPane.showInputDialog(this, "Dirección (opcional):",
+                "Nuevo proveedor", javax.swing.JOptionPane.PLAIN_MESSAGE);
+        Proveedor creado = new ProductoController().guardarProveedor(nombreEmpresa.trim(),
+                telefono == null ? "" : telefono.trim(), direccion == null ? "" : direccion.trim());
+        if (creado == null) {
+            javax.swing.JOptionPane.showMessageDialog(this, "No se pudo guardar el proveedor.",
+                    "Error", javax.swing.JOptionPane.ERROR_MESSAGE);
+            return;
+        }
+        cargarCombos();
+        seleccionarPorId(cboProveedor, creado.getIdProveedor());
+    }
+
     private void txtIdActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_txtIdActionPerformed
         // TODO add your handling code here:
     }//GEN-LAST:event_txtIdActionPerformed
@@ -378,6 +430,8 @@ public class FrmProductos extends javax.swing.JInternalFrame {
     private javax.swing.JButton btnEliminar;
     private javax.swing.JButton btnGuardar;
     private javax.swing.JButton btnLimpiar;
+    private javax.swing.JButton btnNuevaCategoria;
+    private javax.swing.JButton btnNuevoProveedor;
     private javax.swing.JComboBox<Categoria> cboCategoria;
     private javax.swing.JComboBox<Proveedor> cboProveedor;
     private javax.swing.JLabel jLabel1;

@@ -154,6 +154,9 @@ public class FrmEmpleados extends JInternalFrame {
         ));
         jScrollPane1.setViewportView(tablaEmpleados);
 
+        txtId.setEnabled(false);
+        txtId.setToolTipText("El ID se genera automáticamente al guardar.");
+
         txtNombre.addActionListener(this::txtNombreActionPerformed);
 
         txtPuesto.addActionListener(this::txtPuestoActionPerformed);

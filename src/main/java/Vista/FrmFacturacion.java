@@ -172,7 +172,7 @@ public class FrmFacturacion extends javax.swing.JInternalFrame {
         jLabel1 = new javax.swing.JLabel();
         jLabel2 = new javax.swing.JLabel();
         jLabel3 = new javax.swing.JLabel();
-        jTextField1 = new javax.swing.JTextField();
+        spnFecha = new javax.swing.JSpinner();
         cbxCliente = new javax.swing.JComboBox<>();
         cbxEmpleado = new javax.swing.JComboBox<>();
         jLabel4 = new javax.swing.JLabel();
@@ -212,8 +212,8 @@ public class FrmFacturacion extends javax.swing.JInternalFrame {
 
         jLabel3.setText("Vendedor:");
 
-        jTextField1.setText("jTextField1");
-        jTextField1.addActionListener(this::jTextField1ActionPerformed);
+        spnFecha.setModel(new javax.swing.SpinnerDateModel(new java.util.Date(), null, null, java.util.Calendar.DAY_OF_MONTH));
+        spnFecha.setEditor(new javax.swing.JSpinner.DateEditor(spnFecha, "dd/MM/yyyy"));
 
         cbxCliente.setModel(new javax.swing.DefaultComboBoxModel<>(new String[] { "Item 1", "Item 2", "Item 3", "Item 4" }));
         cbxCliente.addActionListener(this::cbxClienteActionPerformed);
@@ -278,7 +278,7 @@ public class FrmFacturacion extends javax.swing.JInternalFrame {
                         .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.UNRELATED)
                         .addComponent(btnAgregar))
                     .addComponent(cbxCliente, 0, 254, Short.MAX_VALUE)
-                    .addComponent(jTextField1, javax.swing.GroupLayout.PREFERRED_SIZE, 123, javax.swing.GroupLayout.PREFERRED_SIZE)
+                    .addComponent(spnFecha, javax.swing.GroupLayout.PREFERRED_SIZE, 123, javax.swing.GroupLayout.PREFERRED_SIZE)
                     .addComponent(cbxProducto, javax.swing.GroupLayout.PREFERRED_SIZE, 199, javax.swing.GroupLayout.PREFERRED_SIZE)
                     .addComponent(cbxEmpleado, 0, javax.swing.GroupLayout.DEFAULT_SIZE, Short.MAX_VALUE))
                 .addContainerGap(503, Short.MAX_VALUE))
@@ -301,7 +301,7 @@ public class FrmFacturacion extends javax.swing.JInternalFrame {
                 .addGap(28, 28, 28)
                 .addGroup(jPanel1Layout.createParallelGroup(javax.swing.GroupLayout.Alignment.BASELINE)
                     .addComponent(jLabel1)
-                    .addComponent(jTextField1, javax.swing.GroupLayout.PREFERRED_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.PREFERRED_SIZE))
+                    .addComponent(spnFecha, javax.swing.GroupLayout.PREFERRED_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.PREFERRED_SIZE))
                 .addGap(9, 9, 9)
                 .addGroup(jPanel1Layout.createParallelGroup(javax.swing.GroupLayout.Alignment.BASELINE)
                     .addComponent(jLabel2)
@@ -355,10 +355,6 @@ public class FrmFacturacion extends javax.swing.JInternalFrame {
         pack();
     }// </editor-fold>//GEN-END:initComponents
 
-    private void jTextField1ActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_jTextField1ActionPerformed
-        // TODO add your handling code here:
-    }//GEN-LAST:event_jTextField1ActionPerformed
-
     private void btnGuardarActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_btnGuardarActionPerformed
     try {
     if (tblDetalles.getRowCount() == 0) {
@@ -369,13 +365,14 @@ public class FrmFacturacion extends javax.swing.JInternalFrame {
     // Extraer datos de la pantalla
     int idCliente = idDesdeItemCombo(cbxCliente.getSelectedItem());
     int idEmpleado = idDesdeItemCombo(cbxEmpleado.getSelectedItem());
+    java.util.Date fecha = (java.util.Date) spnFecha.getValue();
 
     // El estado inicial de la factura (cumpliendo el Punto 1)
     String estado = "Emitida";
 
     // Guarda la factura con su detalle real de productos (inserta las
     // líneas y descuenta existencia de cada producto).
-    boolean exito = controller.crearFactura(idCliente, idEmpleado, detallesActuales, estado);
+    boolean exito = controller.crearFactura(idCliente, idEmpleado, detallesActuales, estado, fecha);
 
     if (exito) {
         javax.swing.JOptionPane.showMessageDialog(this, "¡Factura guardada con éxito!");
@@ -444,6 +441,7 @@ public class FrmFacturacion extends javax.swing.JInternalFrame {
     private void btnLimpiarActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_btnLimpiarActionPerformed
     // Reiniciar ComboBox
     cargarCombos();
+    spnFecha.setValue(new java.util.Date());
     if (cbxCliente.getItemCount() > 0) {
     cbxCliente.setSelectedIndex(0);
 }
@@ -479,7 +477,7 @@ public class FrmFacturacion extends javax.swing.JInternalFrame {
     private javax.swing.JTabbedPane jTabbedPane1;
     private javax.swing.JTabbedPane jTabbedPane2;
     private javax.swing.JTabbedPane jTabbedPane3;
-    private javax.swing.JTextField jTextField1;
+    private javax.swing.JSpinner spnFecha;
     public javax.swing.JLabel lblTotal;
     public javax.swing.JSpinner spnCantidad;
     public javax.swing.JTable tblDetalles;

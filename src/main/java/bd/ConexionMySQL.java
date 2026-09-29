@@ -137,14 +137,14 @@ public class ConexionMySQL {
             // -- sección Producto/Categoria/Inventario/Proveedor/Bodega -- (André)
             stmt.executeUpdate(
                     "CREATE TABLE IF NOT EXISTS ventas_categorias ("
-                    + "id_categoria INT NOT NULL PRIMARY KEY,"
+                    + "id_categoria INT AUTO_INCREMENT PRIMARY KEY,"
                     + "nombre VARCHAR(100) NOT NULL,"
                     + "descripcion VARCHAR(200)"
                     + ") ENGINE=InnoDB");
 
             stmt.executeUpdate(
                     "CREATE TABLE IF NOT EXISTS ventas_proveedores ("
-                    + "id_proveedor INT NOT NULL PRIMARY KEY,"
+                    + "id_proveedor INT AUTO_INCREMENT PRIMARY KEY,"
                     + "nombre_empresa VARCHAR(150) NOT NULL,"
                     + "telefono VARCHAR(50),"
                     + "direccion VARCHAR(200)"
@@ -287,8 +287,52 @@ public class ConexionMySQL {
                     + "CONSTRAINT fk_usuario_empleado FOREIGN KEY (empleado_id) REFERENCES empleados(id_empleado)"
                     + ") ENGINE=InnoDB");
 
+            migrarColumnasAutoIncrement(stmt);
         } catch (SQLException e) {
             throw new ConexionException("No se pudieron crear las tablas del sistema", e);
+        }
+    }
+
+    /**
+     * Las instalaciones que ya tenían "ventas_categorias"/"ventas_proveedores"
+     * creadas antes de este cambio quedaron con id_categoria/id_proveedor
+     * como PRIMARY KEY normal (no autoincremental), porque CREATE TABLE IF
+     * NOT EXISTS no vuelve a ejecutar el CREATE si la tabla ya existe. Este
+     * método es idempotente (se puede correr en cada arranque sin problema)
+     * y pone AUTO_INCREMENT en ambas columnas para que ya no haga falta
+     * inventar el id a mano al agregar una categoría o un proveedor.
+     *
+     * MySQL no deja modificar una columna que ya es referenciada por una
+     * FK ajena (error 1833: "used in a foreign key constraint"), así que
+     * hay que quitar temporalmente las FK de ventas_productos que apuntan
+     * a estas columnas, hacer el ALTER, y volver a crearlas.
+     */
+    private static void migrarColumnasAutoIncrement(Statement stmt) {
+        try {
+            stmt.executeUpdate("ALTER TABLE ventas_productos DROP FOREIGN KEY fk_producto_categoria");
+        } catch (SQLException ignored) {
+        }
+        try {
+            stmt.executeUpdate("ALTER TABLE ventas_productos DROP FOREIGN KEY fk_producto_proveedor");
+        } catch (SQLException ignored) {
+        }
+        try {
+            stmt.executeUpdate("ALTER TABLE ventas_categorias MODIFY id_categoria INT NOT NULL AUTO_INCREMENT");
+        } catch (SQLException ignored) {
+        }
+        try {
+            stmt.executeUpdate("ALTER TABLE ventas_proveedores MODIFY id_proveedor INT NOT NULL AUTO_INCREMENT");
+        } catch (SQLException ignored) {
+        }
+        try {
+            stmt.executeUpdate("ALTER TABLE ventas_productos ADD CONSTRAINT fk_producto_categoria "
+                    + "FOREIGN KEY (categoria_id) REFERENCES ventas_categorias(id_categoria)");
+        } catch (SQLException ignored) {
+        }
+        try {
+            stmt.executeUpdate("ALTER TABLE ventas_productos ADD CONSTRAINT fk_producto_proveedor "
+                    + "FOREIGN KEY (proveedor_id) REFERENCES ventas_proveedores(id_proveedor)");
+        } catch (SQLException ignored) {
         }
     }
 

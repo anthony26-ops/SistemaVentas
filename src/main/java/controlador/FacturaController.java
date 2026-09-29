@@ -86,6 +86,16 @@ public class FacturaController {
      * líneas, y descuenta la existencia de cada producto.
      */
     public boolean crearFactura(int idCliente, int idEmpleado, List<DetalleFactura> detalles, String estado) throws Exception {
+        return crearFactura(idCliente, idEmpleado, detalles, estado, new java.util.Date());
+    }
+
+    /**
+     * Igual que crearFactura, pero recibiendo la fecha elegida en el
+     * selector de calendario de la pantalla en vez de asumir siempre
+     * "ahora mismo".
+     */
+    public boolean crearFactura(int idCliente, int idEmpleado, List<DetalleFactura> detalles, String estado,
+            java.util.Date fecha) throws Exception {
         if (detalles == null || detalles.isEmpty()) {
             throw new Exception("La factura debe tener al menos un producto.");
         }
@@ -96,7 +106,7 @@ public class FacturaController {
         }
 
         Factura factura = new Factura();
-        factura.setFecha(new java.sql.Date(System.currentTimeMillis()));
+        factura.setFecha(new java.sql.Date((fecha != null ? fecha : new java.util.Date()).getTime()));
 
         Cliente cliente = new Cliente();
         cliente.setId(idCliente);

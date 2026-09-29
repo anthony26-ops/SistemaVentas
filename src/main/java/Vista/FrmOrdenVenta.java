@@ -73,7 +73,7 @@ public class FrmOrdenVenta extends javax.swing.JInternalFrame {
         jLabel1 = new javax.swing.JLabel();
         jLabel2 = new javax.swing.JLabel();
         jLabel3 = new javax.swing.JLabel();
-        jTextField1 = new javax.swing.JTextField();
+        spnFecha = new javax.swing.JSpinner();
         cbxEmpleado = new javax.swing.JComboBox<>();
         cbxCliente = new javax.swing.JComboBox<>();
         jLabel4 = new javax.swing.JLabel();
@@ -113,7 +113,8 @@ public class FrmOrdenVenta extends javax.swing.JInternalFrame {
 
         jLabel3.setText("Vendedor:");
 
-        jTextField1.setText("jTextField1");
+        spnFecha.setModel(new javax.swing.SpinnerDateModel(new java.util.Date(), null, null, java.util.Calendar.DAY_OF_MONTH));
+        spnFecha.setEditor(new javax.swing.JSpinner.DateEditor(spnFecha, "dd/MM/yyyy"));
 
         cbxEmpleado.setModel(new javax.swing.DefaultComboBoxModel<>(new String[] { "Item 1", "Item 2", "Item 3", "Item 4" }));
 
@@ -173,7 +174,7 @@ public class FrmOrdenVenta extends javax.swing.JInternalFrame {
                         .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED)
                         .addGroup(jPanel1Layout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
                             .addGroup(jPanel1Layout.createSequentialGroup()
-                                .addComponent(jTextField1, javax.swing.GroupLayout.PREFERRED_SIZE, 119, javax.swing.GroupLayout.PREFERRED_SIZE)
+                                .addComponent(spnFecha, javax.swing.GroupLayout.PREFERRED_SIZE, 119, javax.swing.GroupLayout.PREFERRED_SIZE)
                                 .addGap(33, 33, 33)
                                 .addComponent(jLabel2)
                                 .addGap(18, 18, 18)
@@ -207,7 +208,7 @@ public class FrmOrdenVenta extends javax.swing.JInternalFrame {
                 .addGap(36, 36, 36)
                 .addGroup(jPanel1Layout.createParallelGroup(javax.swing.GroupLayout.Alignment.BASELINE)
                     .addComponent(jLabel1)
-                    .addComponent(jTextField1, javax.swing.GroupLayout.PREFERRED_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.PREFERRED_SIZE)
+                    .addComponent(spnFecha, javax.swing.GroupLayout.PREFERRED_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.PREFERRED_SIZE)
                     .addComponent(cbxCliente, javax.swing.GroupLayout.PREFERRED_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.PREFERRED_SIZE)
                     .addComponent(jLabel2)
                     .addComponent(cbxEmpleado, javax.swing.GroupLayout.PREFERRED_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.PREFERRED_SIZE)
@@ -262,10 +263,11 @@ public class FrmOrdenVenta extends javax.swing.JInternalFrame {
     int idCliente = idDesdeItemCombo(cbxCliente.getSelectedItem());
     int idEmpleado = idDesdeItemCombo(cbxEmpleado.getSelectedItem());
     String estado = "Pendiente"; // Nuevo campo obligatorio
+    java.util.Date fecha = (java.util.Date) spnFecha.getValue();
 
     // Llamar a crearPedido con el controlador puro (sin dependencias de Swing),
     // guardando también el detalle real de productos.
-    boolean exito = controller.crearPedido(idCliente, idEmpleado, detallesActuales, estado);
+    boolean exito = controller.crearPedido(idCliente, idEmpleado, detallesActuales, estado, fecha);
     
     if (exito) {
         javax.swing.JOptionPane.showMessageDialog(this, "¡Orden registrada con éxito!");
@@ -332,6 +334,7 @@ public class FrmOrdenVenta extends javax.swing.JInternalFrame {
 
     private void btnLimpiarActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_btnLimpiarActionPerformed
         cargarCombos();
+        spnFecha.setValue(new java.util.Date());
         if (cbxCliente.getItemCount() > 0) {
     cbxCliente.setSelectedIndex(0);
 }
@@ -363,7 +366,7 @@ public class FrmOrdenVenta extends javax.swing.JInternalFrame {
     private javax.swing.JPanel jPanel2;
     private javax.swing.JScrollPane jScrollPane1;
     private javax.swing.JTabbedPane jTabbedPane1;
-    private javax.swing.JTextField jTextField1;
+    private javax.swing.JSpinner spnFecha;
     public javax.swing.JLabel lblTotal;
     public javax.swing.JSpinner spnCantidad;
     public javax.swing.JTable tblDetalles;

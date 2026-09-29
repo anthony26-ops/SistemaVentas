@@ -49,4 +49,12 @@ public class ProductoController {
     public List<Proveedor> listarProveedores() {
         return ((ProductoDAOImpl) dao).listarProveedores();
     }
+
+    public Categoria guardarCategoria(String nombre, String descripcion) {
+        return ((ProductoDAOImpl) dao).insertarCategoria(nombre, descripcion);
+    }
+
+    public Proveedor guardarProveedor(String nombreEmpresa, String telefono, String direccion) {
+        return ((ProductoDAOImpl) dao).insertarProveedor(nombreEmpresa, telefono, direccion);
+    }
 }
