@@ -25,6 +25,15 @@ public class FrmClientes extends JInternalFrame {
     private void configurarTabla() {
         modeloTabla = new DefaultTableModel(new String[]{"ID", "Nombre", "Apellido", "Teléfono", "Email", "NIT"}, 0);
         tablaClientes.setModel(modeloTabla);
+        // Sin este listener, hacer clic en una fila no cargaba nada en el
+        // formulario: como txtId está deshabilitado, no había forma de
+        // indicar qué cliente actualizar o eliminar.
+        tablaClientes.addMouseListener(new java.awt.event.MouseAdapter() {
+            @Override
+            public void mouseClicked(java.awt.event.MouseEvent evt) {
+                tablaClientesMouseClicked(evt);
+            }
+        });
     }
 
     private void cargarTabla() {
