@@ -18,7 +18,7 @@ import modelo.OrdenVenta;
  * (no se vuelve a teclear a mano), cumpliendo el flujo obligatorio
  * Cliente -&gt; Orden de Venta -&gt; Despacho -&gt; Salida de Inventario -&gt; Facturación.
  */
-public class FrmOrdenDespacho extends JFrame {
+public class FrmOrdenDespacho extends JInternalFrame {
 
     private final OrdenDespachoController controller = new OrdenDespachoController();
     private List<DetalleOrdenDespacho> detallesOrdenActual = new ArrayList<>();
@@ -39,8 +39,12 @@ public class FrmOrdenDespacho extends JFrame {
     }
 
     private void initComponents() {
-        setTitle("Sistema de Ventas - Orden de Despacho");
-        setDefaultCloseOperation(JFrame.DISPOSE_ON_CLOSE);
+        setTitle("Orden de Despacho");
+        setDefaultCloseOperation(WindowConstants.DISPOSE_ON_CLOSE);
+        setClosable(true);
+        setIconifiable(true);
+        setMaximizable(true);
+        setResizable(true);
         setSize(900, 640);
         setLayout(new BorderLayout(10, 10));
 
@@ -301,7 +305,4 @@ public class FrmOrdenDespacho extends JFrame {
         lblClienteOrden.setText("-");
     }
 
-    public static void main(String[] args) {
-        SwingUtilities.invokeLater(() -> new FrmOrdenDespacho().setVisible(true));
-    }
 }

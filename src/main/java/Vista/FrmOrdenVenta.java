@@ -7,7 +7,7 @@ import modelo.Producto;
  *
  * @author Aramis Ramos
  */
-public class FrmOrdenVenta extends javax.swing.JFrame {
+public class FrmOrdenVenta extends javax.swing.JInternalFrame {
 
     private static final java.util.logging.Logger logger = java.util.logging.Logger.getLogger(FrmOrdenVenta.class.getName());
     private final controlador.OrdenVentaController controller = new controlador.OrdenVentaController();
@@ -88,6 +88,11 @@ public class FrmOrdenVenta extends javax.swing.JFrame {
         btnLimpiar = new javax.swing.JButton();
 
         setDefaultCloseOperation(javax.swing.WindowConstants.DISPOSE_ON_CLOSE);
+        setClosable(true);
+        setIconifiable(true);
+        setMaximizable(true);
+        setResizable(true);
+        setTitle("Hacer Pedido");
 
         javax.swing.GroupLayout jPanel2Layout = new javax.swing.GroupLayout(jPanel2);
         jPanel2.setLayout(jPanel2Layout);
@@ -341,30 +346,6 @@ public class FrmOrdenVenta extends javax.swing.JFrame {
     detallesActuales.clear();
     }//GEN-LAST:event_btnLimpiarActionPerformed
 
-    /**
-     * @param args the command line arguments
-     */
-    public static void main(String args[]) {
-        /* Set the Nimbus look and feel */
-        //<editor-fold defaultstate="collapsed" desc=" Look and feel setting code (optional) ">
-        /* If Nimbus (introduced in Java SE 6) is not available, stay with the default look and feel.
-         * For details see http://download.oracle.com/javase/tutorial/uiswing/lookandfeel/plaf.html 
-         */
-        try {
-            for (javax.swing.UIManager.LookAndFeelInfo info : javax.swing.UIManager.getInstalledLookAndFeels()) {
-                if ("Nimbus".equals(info.getName())) {
-                    javax.swing.UIManager.setLookAndFeel(info.getClassName());
-                    break;
-                }
-            }
-        } catch (ReflectiveOperationException | javax.swing.UnsupportedLookAndFeelException ex) {
-            logger.log(java.util.logging.Level.SEVERE, null, ex);
-        }
-        //</editor-fold>
-
-        /* Create and display the form */
-        java.awt.EventQueue.invokeLater(() -> new FrmOrdenVenta().setVisible(true));
-    }
 
     // Variables declaration - do not modify//GEN-BEGIN:variables
     public javax.swing.JButton btnAgregar;
