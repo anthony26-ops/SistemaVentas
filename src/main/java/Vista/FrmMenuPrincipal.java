@@ -47,7 +47,8 @@ public class FrmMenuPrincipal extends JFrame {
     private void initComponents() {
         setDefaultCloseOperation(WindowConstants.EXIT_ON_CLOSE);
         setTitle("Sistema de Ventas");
-        setSize(900, 600);
+        setExtendedState(JFrame.MAXIMIZED_BOTH);
+        setSize(1100, 750);
         setLocationRelativeTo(null);
 
         desktopPane = new JDesktopPane();
@@ -63,6 +64,15 @@ public class FrmMenuPrincipal extends JFrame {
         lblBienvenida.setFont(lblBienvenida.getFont().deriveFont(28f));
         lblBienvenida.setBounds(0, 0, 900, 500);
         desktopPane.add(lblBienvenida);
+        // El JDesktopPane no usa layout manager: sin este listener, al maximizar
+        // la ventana el label conserva su tamaño fijo y queda un área en blanco
+        // (el fondo azul del desktopPane) a la derecha/abajo del texto.
+        desktopPane.addComponentListener(new java.awt.event.ComponentAdapter() {
+            @Override
+            public void componentResized(java.awt.event.ComponentEvent e) {
+                lblBienvenida.setBounds(0, 0, desktopPane.getWidth(), desktopPane.getHeight());
+            }
+        });
 
         getContentPane().setLayout(new BorderLayout());
         getContentPane().add(desktopPane, BorderLayout.CENTER);

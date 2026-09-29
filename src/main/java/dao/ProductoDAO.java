@@ -12,6 +12,8 @@ import modelo.Producto;
  */
 public interface ProductoDAO {
     void guardar(Producto producto);
+    boolean actualizar(Producto producto);
+    boolean eliminar(int idProducto);
     List<Producto> listar();
     Producto buscarPorId(int id);
     void actualizarExistencia(int idProducto, int nuevaExistencia);

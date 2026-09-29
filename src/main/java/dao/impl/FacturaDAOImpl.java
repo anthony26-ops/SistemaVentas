@@ -24,11 +24,17 @@ public class FacturaDAOImpl implements FacturaDAO {
     /**
      * Inserta la factura y, si trae detalles (factura.getDetalles()), los
      * guarda en factura_detalles y descuenta la existencia de cada
-     * producto, todo dentro de la misma transacción.
+     * producto, todo dentro de la misma transacción. Se usa para la
+     * facturación manual (sin orden de venta detrás), donde nadie más
+     * descontó inventario todavía.
      */
     @Override
     public boolean registrarFactura(Factura factura) {
-        String sql = "INSERT INTO facturas (fecha, id_cliente, id_empleado, total, estado) VALUES (?, ?, ?, ?, ?)";
+        return registrarFacturaInterno(factura, true);
+    }
+
+    private boolean registrarFacturaInterno(Factura factura, boolean descontarInventario) {
+        String sql = "INSERT INTO facturas (fecha, id_orden_venta, id_cliente, id_empleado, total, estado) VALUES (?, ?, ?, ?, ?, ?)";
 
         try (Connection con = ConexionMySQL.getConnection()) {
             con.setAutoCommit(false);
@@ -36,10 +42,15 @@ public class FacturaDAOImpl implements FacturaDAO {
             int idFactura;
             try (PreparedStatement ps = con.prepareStatement(sql, Statement.RETURN_GENERATED_KEYS)) {
                 ps.setDate(1, new java.sql.Date(factura.getFecha().getTime()));
-                ps.setInt(2, factura.getCliente() != null ? factura.getCliente().getId() : 0);
-                ps.setInt(3, factura.getEmpleado() != null ? factura.getEmpleado().getId() : 0);
-                ps.setDouble(4, factura.getTotal());
-                ps.setString(5, factura.getEstado());
+                if (factura.getIdOrdenVenta() != null) {
+                    ps.setInt(2, factura.getIdOrdenVenta());
+                } else {
+                    ps.setNull(2, java.sql.Types.INTEGER);
+                }
+                ps.setInt(3, factura.getCliente() != null ? factura.getCliente().getId() : 0);
+                ps.setInt(4, factura.getEmpleado() != null ? factura.getEmpleado().getId() : 0);
+                ps.setDouble(5, factura.getTotal());
+                ps.setString(6, factura.getEstado());
                 if (ps.executeUpdate() == 0) {
                     return false;
                 }
@@ -64,7 +75,7 @@ public class FacturaDAOImpl implements FacturaDAO {
             // hasta hacer timeout.
             con.commit();
 
-            if (factura.getDetalles() != null && !factura.getDetalles().isEmpty()) {
+            if (descontarInventario && factura.getDetalles() != null && !factura.getDetalles().isEmpty()) {
                 descontarExistencias(factura.getDetalles());
             }
 
@@ -101,12 +112,24 @@ public class FacturaDAOImpl implements FacturaDAO {
         }
     }
 
+    /**
+     * Genera la factura a partir de una orden que YA fue despachada. El
+     * flujo obligatorio del proyecto es Cliente -> OrdenVenta -> Despacho ->
+     * Salida de inventario -> Facturación: el inventario se descuenta una
+     * sola vez, al confirmar el despacho (OrdenDespachoDAOImpl), así que
+     * aquí NO se vuelve a descontar.
+     */
     @Override
     public Factura generarFacturaDesdeOrden(OrdenVenta orden) {
         OrdenVentaDAO ordenVentaDAO = new OrdenVentaDAOImpl();
 
         OrdenVenta ordenCompleta = ordenVentaDAO.obtenerOrdenPorId(orden.getIdOrdenVenta());
         if (ordenCompleta == null || ordenCompleta.getDetalles() == null || ordenCompleta.getDetalles().isEmpty()) {
+            return null;
+        }
+        if (!"Despachada".equalsIgnoreCase(ordenCompleta.getEstado())) {
+            System.err.println("No se puede facturar: la orden " + ordenCompleta.getIdOrdenVenta()
+                    + " todavía no ha sido despachada (estado actual: " + ordenCompleta.getEstado() + ")");
             return null;
         }
 
@@ -123,13 +146,15 @@ public class FacturaDAOImpl implements FacturaDAO {
 
         Factura factura = new Factura();
         factura.setFecha(new java.sql.Date(System.currentTimeMillis()));
+        factura.setIdOrdenVenta(ordenCompleta.getIdOrdenVenta());
         factura.setCliente(ordenCompleta.getCliente());
         factura.setEmpleado(ordenCompleta.getEmpleado());
         factura.setDetalles(detallesFactura);
         factura.setTotal(total);
         factura.setEstado("Emitida");
 
-        if (!registrarFactura(factura)) {
+        // false: el inventario ya se descontó al confirmar el despacho.
+        if (!registrarFacturaInterno(factura, false)) {
             return null;
         }
 
@@ -176,9 +201,31 @@ public class FacturaDAOImpl implements FacturaDAO {
         return factura;
     }
 
+    @Override
+    public Factura obtenerFacturaPorOrden(int idOrdenVenta) {
+        Factura factura = null;
+        String sql = "SELECT * FROM facturas WHERE id_orden_venta = ?";
+
+        try (Connection con = ConexionMySQL.getConnection();
+             PreparedStatement ps = con.prepareStatement(sql)) {
+
+            ps.setInt(1, idOrdenVenta);
+            try (ResultSet rs = ps.executeQuery()) {
+                if (rs.next()) {
+                    factura = mapearFactura(rs);
+                }
+            }
+        } catch (Exception e) {
+            System.err.println("Error al obtener factura por orden: " + e.getMessage());
+        }
+        return factura;
+    }
+
     private Factura mapearFactura(ResultSet rs) throws java.sql.SQLException {
         Factura factura = new Factura();
         factura.setIdFactura(rs.getInt("id"));
+        int idOrden = rs.getInt("id_orden_venta");
+        factura.setIdOrdenVenta(rs.wasNull() ? null : idOrden);
         factura.setFecha(rs.getDate("fecha"));
 
         Cliente cliente = new Cliente();

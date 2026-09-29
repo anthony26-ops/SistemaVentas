@@ -8,23 +8,25 @@ import java.util.List;
 import javax.swing.*;
 import javax.swing.table.DefaultTableModel;
 import modelo.DetalleOrdenDespacho;
+import modelo.DetalleOrdenVenta;
 import modelo.OrdenDespacho;
+import modelo.OrdenVenta;
 
 /**
- * Pantalla del modulo de Orden de Despacho. Permite armar la orden con sus
- * productos antes de guardarla y consultar las ordenes ya generadas.
+ * Pantalla del modulo de Orden de Despacho. El detalle de productos a
+ * despachar se toma automáticamente de la Orden de Venta seleccionada
+ * (no se vuelve a teclear a mano), cumpliendo el flujo obligatorio
+ * Cliente -&gt; Orden de Venta -&gt; Despacho -&gt; Salida de Inventario -&gt; Facturación.
  */
-public class FrmOrdenDespacho extends JFrame {
+public class FrmOrdenDespacho extends JInternalFrame {
 
     private final OrdenDespachoController controller = new OrdenDespachoController();
-    private final List<DetalleOrdenDespacho> detallesTemporales = new ArrayList<>();
+    private List<DetalleOrdenDespacho> detallesOrdenActual = new ArrayList<>();
 
-    private JTextField txtIdOrdenVenta;
+    private JComboBox<String> cbxOrdenVenta;
+    private JLabel lblClienteOrden;
     private JTextField txtDireccion;
     private JTextField txtTransportista;
-    private JTextField txtIdProducto;
-    private JTextField txtNombreProducto;
-    private JTextField txtCantidad;
     private JTable tblDetalles;
     private DefaultTableModel modeloDetalles;
     private JTable tblOrdenes;
@@ -32,13 +34,18 @@ public class FrmOrdenDespacho extends JFrame {
 
     public FrmOrdenDespacho() {
         initComponents();
+        cargarOrdenesPendientes();
         cargarOrdenes();
     }
 
     private void initComponents() {
-        setTitle("Sistema de Ventas - Orden de Despacho");
-        setDefaultCloseOperation(JFrame.DISPOSE_ON_CLOSE);
-        setSize(900, 620);
+        setTitle("Orden de Despacho");
+        setDefaultCloseOperation(WindowConstants.DISPOSE_ON_CLOSE);
+        setClosable(true);
+        setIconifiable(true);
+        setMaximizable(true);
+        setResizable(true);
+        setSize(900, 640);
         setLayout(new BorderLayout(10, 10));
 
         // ---------- Encabezado de la orden ----------
@@ -50,58 +57,44 @@ public class FrmOrdenDespacho extends JFrame {
         gbc.anchor = GridBagConstraints.WEST;
 
         gbc.gridx = 0; gbc.gridy = 0;
-        panelEncabezado.add(new JLabel("No. orden de venta:"), gbc);
+        panelEncabezado.add(new JLabel("Orden de venta pendiente:"), gbc);
         gbc.gridx = 1; gbc.weightx = 1;
-        txtIdOrdenVenta = new JTextField(10);
-        panelEncabezado.add(txtIdOrdenVenta, gbc);
+        cbxOrdenVenta = new JComboBox<>();
+        cbxOrdenVenta.addActionListener(e -> cargarDetalleDeOrdenSeleccionada());
+        panelEncabezado.add(cbxOrdenVenta, gbc);
 
         gbc.gridx = 2; gbc.weightx = 0;
-        panelEncabezado.add(new JLabel("Transportista:"), gbc);
+        panelEncabezado.add(new JLabel("Cliente:"), gbc);
         gbc.gridx = 3; gbc.weightx = 1;
+        lblClienteOrden = new JLabel("-");
+        panelEncabezado.add(lblClienteOrden, gbc);
+
+        gbc.gridx = 0; gbc.gridy = 1; gbc.weightx = 0;
+        panelEncabezado.add(new JLabel("Transportista:"), gbc);
+        gbc.gridx = 1; gbc.weightx = 1;
         txtTransportista = new JTextField(15);
         panelEncabezado.add(txtTransportista, gbc);
 
-        gbc.gridx = 0; gbc.gridy = 1; gbc.weightx = 0;
+        gbc.gridx = 2; gbc.weightx = 0;
         panelEncabezado.add(new JLabel("Direccion de entrega:"), gbc);
-        gbc.gridx = 1; gbc.gridwidth = 3; gbc.weightx = 1;
-        txtDireccion = new JTextField(40);
+        gbc.gridx = 3; gbc.weightx = 1;
+        txtDireccion = new JTextField(25);
         panelEncabezado.add(txtDireccion, gbc);
-        gbc.gridwidth = 1;
 
         add(panelEncabezado, BorderLayout.NORTH);
 
-        // ---------- Panel central: productos + ordenes ----------
+        // ---------- Panel central: productos de la orden + ordenes ----------
         JPanel panelCentro = new JPanel(new GridLayout(2, 1, 10, 10));
 
-        // Productos de la orden
         JPanel panelProductos = new JPanel(new BorderLayout(6, 6));
-        panelProductos.setBorder(BorderFactory.createTitledBorder("Productos a despachar"));
-
-        JPanel panelAgregar = new JPanel(new FlowLayout(FlowLayout.LEFT, 8, 6));
-        panelAgregar.add(new JLabel("Codigo producto:"));
-        txtIdProducto = new JTextField(6);
-        panelAgregar.add(txtIdProducto);
-        panelAgregar.add(new JLabel("Nombre:"));
-        txtNombreProducto = new JTextField(16);
-        panelAgregar.add(txtNombreProducto);
-        panelAgregar.add(new JLabel("Cantidad:"));
-        txtCantidad = new JTextField(5);
-        panelAgregar.add(txtCantidad);
-
-        JButton btnAgregar = new JButton("Agregar producto");
-        JButton btnQuitar = new JButton("Quitar seleccionado");
-        btnAgregar.addActionListener(e -> agregarDetalle());
-        btnQuitar.addActionListener(e -> quitarDetalle());
-        panelAgregar.add(btnAgregar);
-        panelAgregar.add(btnQuitar);
-
-        panelProductos.add(panelAgregar, BorderLayout.NORTH);
+        panelProductos.setBorder(BorderFactory.createTitledBorder(
+                "Productos a despachar (tomados automáticamente de la orden seleccionada)"));
 
         modeloDetalles = new DefaultTableModel(
                 new String[]{"Codigo", "Producto", "Cantidad"}, 0) {
             @Override
             public boolean isCellEditable(int fila, int columna) {
-                return false;
+                return false;   // solo lectura: refleja el detalle real de la orden
             }
         };
         tblDetalles = new JTable(modeloDetalles);
@@ -126,7 +119,7 @@ public class FrmOrdenDespacho extends JFrame {
 
         // ---------- Botones ----------
         JPanel panelBotones = new JPanel(new FlowLayout(FlowLayout.CENTER, 10, 10));
-        JButton btnGuardar = new JButton("Guardar orden");
+        JButton btnGuardar = new JButton("Confirmar despacho");
         JButton btnCambiarEstado = new JButton("Cambiar estado");
         JButton btnVerDetalle = new JButton("Ver detalle");
         JButton btnLimpiar = new JButton("Limpiar");
@@ -146,74 +139,91 @@ public class FrmOrdenDespacho extends JFrame {
         add(panelBotones, BorderLayout.SOUTH);
     }
 
-    private void agregarDetalle() {
-        try {
-            int idProducto = Integer.parseInt(txtIdProducto.getText().trim());
-            String nombre = txtNombreProducto.getText().trim();
-            int cantidad = Integer.parseInt(txtCantidad.getText().trim());
-
-            if (nombre.isEmpty()) {
-                JOptionPane.showMessageDialog(this, "Ingrese el nombre del producto.",
-                        "Datos incompletos", JOptionPane.WARNING_MESSAGE);
-                return;
-            }
-            if (cantidad <= 0) {
-                JOptionPane.showMessageDialog(this, "La cantidad debe ser mayor a cero.",
-                        "Datos invalidos", JOptionPane.WARNING_MESSAGE);
-                return;
-            }
-
-            DetalleOrdenDespacho detalle = new DetalleOrdenDespacho();
-            detalle.setIdProducto(idProducto);
-            detalle.setNombreProducto(nombre);
-            detalle.setCantidad(cantidad);
-            detallesTemporales.add(detalle);
-
-            modeloDetalles.addRow(new Object[]{idProducto, nombre, cantidad});
-
-            txtIdProducto.setText("");
-            txtNombreProducto.setText("");
-            txtCantidad.setText("");
-            txtIdProducto.requestFocus();
-
-        } catch (NumberFormatException ex) {
-            JOptionPane.showMessageDialog(this,
-                    "El codigo de producto y la cantidad deben ser numeros.",
-                    "Datos invalidos", JOptionPane.WARNING_MESSAGE);
+    /** Carga en el combo las órdenes de venta que todavía no se han despachado. */
+    private void cargarOrdenesPendientes() {
+        cbxOrdenVenta.removeAllItems();
+        for (OrdenVenta orden : controller.listarOrdenesPendientes()) {
+            cbxOrdenVenta.addItem(orden.getIdOrdenVenta() + " - Cliente #" + orden.getCliente().getId()
+                    + " - Total Q" + String.format("%.2f", orden.getTotal()));
+        }
+        if (cbxOrdenVenta.getItemCount() == 0) {
+            cbxOrdenVenta.addItem("(No hay órdenes de venta pendientes de despachar)");
         }
     }
 
-    private void quitarDetalle() {
-        int fila = tblDetalles.getSelectedRow();
-        if (fila < 0) {
-            JOptionPane.showMessageDialog(this, "Seleccione el producto que desea quitar.");
+    /** Al elegir una orden en el combo, trae su detalle real de productos. */
+    private void cargarDetalleDeOrdenSeleccionada() {
+        modeloDetalles.setRowCount(0);
+        detallesOrdenActual = new ArrayList<>();
+        lblClienteOrden.setText("-");
+
+        Integer idOrdenVenta = idOrdenSeleccionada();
+        if (idOrdenVenta == null) {
             return;
         }
-        detallesTemporales.remove(fila);
-        modeloDetalles.removeRow(fila);
+
+        OrdenVenta orden = controller.obtenerOrdenVenta(idOrdenVenta);
+        if (orden == null || orden.getDetalles() == null) {
+            return;
+        }
+
+        lblClienteOrden.setText("Cliente #" + orden.getCliente().getId());
+
+        for (DetalleOrdenVenta d : orden.getDetalles()) {
+            modeloDetalles.addRow(new Object[]{
+                d.getProducto().getIdProducto(), d.getProducto().getNombre(), d.getCantidad()
+            });
+
+            DetalleOrdenDespacho detalleDespacho = new DetalleOrdenDespacho();
+            detalleDespacho.setIdProducto(d.getProducto().getIdProducto());
+            detalleDespacho.setNombreProducto(d.getProducto().getNombre());
+            detalleDespacho.setCantidad(d.getCantidad());
+            detallesOrdenActual.add(detalleDespacho);
+        }
+    }
+
+    /** Extrae el número de orden del texto seleccionado en el combo ("id - ..."). */
+    private Integer idOrdenSeleccionada() {
+        Object seleccion = cbxOrdenVenta.getSelectedItem();
+        if (seleccion == null) {
+            return null;
+        }
+        String texto = seleccion.toString();
+        int guion = texto.indexOf(" - ");
+        if (guion <= 0) {
+            return null;
+        }
+        try {
+            return Integer.parseInt(texto.substring(0, guion).trim());
+        } catch (NumberFormatException ex) {
+            return null;
+        }
     }
 
     private void guardarOrden() {
+        Integer idOrdenVenta = idOrdenSeleccionada();
+        if (idOrdenVenta == null) {
+            JOptionPane.showMessageDialog(this, "Seleccione una orden de venta pendiente para despachar.",
+                    "Datos incompletos", JOptionPane.WARNING_MESSAGE);
+            return;
+        }
         try {
-            int idOrdenVenta = Integer.parseInt(txtIdOrdenVenta.getText().trim());
-
             OrdenDespacho orden = controller.crearOrdenDespacho(
                     idOrdenVenta,
                     txtDireccion.getText(),
                     txtTransportista.getText(),
-                    new ArrayList<>(detallesTemporales));
+                    new ArrayList<>(detallesOrdenActual));
 
             JOptionPane.showMessageDialog(this,
                     "Orden de despacho No. " + orden.getIdOrdenDespacho() + " guardada correctamente.\n"
-                    + "Total de unidades: " + orden.calcularTotalUnidades(),
+                    + "Total de unidades: " + orden.calcularTotalUnidades() + "\n"
+                    + "Se descontó el inventario de cada producto despachado.",
                     "Sistema de Ventas", JOptionPane.INFORMATION_MESSAGE);
 
             limpiarFormulario();
+            cargarOrdenesPendientes();
             cargarOrdenes();
 
-        } catch (NumberFormatException ex) {
-            JOptionPane.showMessageDialog(this, "El numero de orden de venta debe ser numerico.",
-                    "Datos invalidos", JOptionPane.WARNING_MESSAGE);
         } catch (Exception ex) {
             JOptionPane.showMessageDialog(this, ex.getMessage(),
                     "No se pudo guardar la orden", JOptionPane.WARNING_MESSAGE);
@@ -288,18 +298,11 @@ public class FrmOrdenDespacho extends JFrame {
     }
 
     private void limpiarFormulario() {
-        txtIdOrdenVenta.setText("");
         txtDireccion.setText("");
         txtTransportista.setText("");
-        txtIdProducto.setText("");
-        txtNombreProducto.setText("");
-        txtCantidad.setText("");
-        detallesTemporales.clear();
         modeloDetalles.setRowCount(0);
-        txtIdOrdenVenta.requestFocus();
+        detallesOrdenActual = new ArrayList<>();
+        lblClienteOrden.setText("-");
     }
 
-    public static void main(String[] args) {
-        SwingUtilities.invokeLater(() -> new FrmOrdenDespacho().setVisible(true));
-    }
 }

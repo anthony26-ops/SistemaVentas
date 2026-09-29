@@ -36,6 +36,38 @@ public class ProductoDAOImpl implements ProductoDAO {
     }
     
     @Override
+    public boolean actualizar(Producto p) {
+        String sql = "UPDATE ventas_productos SET nombre=?, descripcion=?, precio=?, existencia=?, categoria_id=?, proveedor_id=? WHERE id_producto=?";
+        try (Connection con = ConexionMySQL.getConnection();
+             PreparedStatement ps = con.prepareStatement(sql)) {
+            ps.setString(1, p.getNombre());
+            ps.setString(2, p.getDescripcion());
+            ps.setDouble(3, p.getPrecio());
+            ps.setInt(4, p.getExistencia());
+            ps.setInt(5, p.getCategoria().getIdCategoria());
+            ps.setInt(6, p.getProveedor().getIdProveedor());
+            ps.setInt(7, p.getIdProducto());
+            return ps.executeUpdate() > 0;
+        } catch (SQLException | ConexionException e) {
+            e.printStackTrace();
+            return false;
+        }
+    }
+
+    @Override
+    public boolean eliminar(int idProducto) {
+        String sql = "DELETE FROM ventas_productos WHERE id_producto=?";
+        try (Connection con = ConexionMySQL.getConnection();
+             PreparedStatement ps = con.prepareStatement(sql)) {
+            ps.setInt(1, idProducto);
+            return ps.executeUpdate() > 0;
+        } catch (SQLException | ConexionException e) {
+            e.printStackTrace();
+            return false;
+        }
+    }
+
+    @Override
     public List<Producto> listar() {
     List<Producto> lista = new ArrayList<>();
     String sql = "SELECT * FROM ventas_productos";
@@ -124,6 +156,51 @@ public class ProductoDAOImpl implements ProductoDAO {
         }
         return lista;
     }
+    /** Inserta una categoría nueva y devuelve el registro con el id autogenerado, o null si falló. */
+    public Categoria insertarCategoria(String nombre, String descripcion) {
+        String sql = "INSERT INTO ventas_categorias (nombre, descripcion) VALUES (?, ?)";
+        try (Connection con = ConexionMySQL.getConnection();
+             PreparedStatement ps = con.prepareStatement(sql, Statement.RETURN_GENERATED_KEYS)) {
+            ps.setString(1, nombre);
+            ps.setString(2, descripcion);
+            if (ps.executeUpdate() == 0) {
+                return null;
+            }
+            try (ResultSet keys = ps.getGeneratedKeys()) {
+                if (!keys.next()) {
+                    return null;
+                }
+                return new Categoria(keys.getInt(1), nombre, descripcion);
+            }
+        } catch (SQLException | ConexionException e) {
+            e.printStackTrace();
+            return null;
+        }
+    }
+
+    /** Inserta un proveedor nuevo y devuelve el registro con el id autogenerado, o null si falló. */
+    public Proveedor insertarProveedor(String nombreEmpresa, String telefono, String direccion) {
+        String sql = "INSERT INTO ventas_proveedores (nombre_empresa, telefono, direccion) VALUES (?, ?, ?)";
+        try (Connection con = ConexionMySQL.getConnection();
+             PreparedStatement ps = con.prepareStatement(sql, Statement.RETURN_GENERATED_KEYS)) {
+            ps.setString(1, nombreEmpresa);
+            ps.setString(2, telefono);
+            ps.setString(3, direccion);
+            if (ps.executeUpdate() == 0) {
+                return null;
+            }
+            try (ResultSet keys = ps.getGeneratedKeys()) {
+                if (!keys.next()) {
+                    return null;
+                }
+                return new Proveedor(keys.getInt(1), nombreEmpresa, telefono, direccion);
+            }
+        } catch (SQLException | ConexionException e) {
+            e.printStackTrace();
+            return null;
+        }
+    }
+
     public List<Proveedor> listarProveedores() {
         List<Proveedor> lista = new ArrayList<>();
         String sql = "SELECT * FROM ventas_proveedores";

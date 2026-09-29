@@ -14,7 +14,7 @@ import modelo.PagoEfectivo;
  * Pantalla del modulo de Pagos. Solo se encarga de mostrar datos y de
  * recoger lo que el usuario escribe: toda la logica vive en PagoController.
  */
-public class FrmPago extends JFrame {
+public class FrmPago extends JInternalFrame {
 
     private final PagoController controller = new PagoController();
 
@@ -34,8 +34,12 @@ public class FrmPago extends JFrame {
     }
 
     private void initComponents() {
-        setTitle("Sistema de Ventas - Registro de Pagos");
-        setDefaultCloseOperation(JFrame.DISPOSE_ON_CLOSE);
+        setTitle("Registro de Pagos");
+        setDefaultCloseOperation(WindowConstants.DISPOSE_ON_CLOSE);
+        setClosable(true);
+        setIconifiable(true);
+        setMaximizable(true);
+        setResizable(true);
         setSize(820, 540);
         setLayout(new BorderLayout(10, 10));
 
@@ -245,11 +249,20 @@ public class FrmPago extends JFrame {
         }
     }
 
-    /** Abre la pantalla de Orden de Despacho del mismo modulo. */
+    /** Abre la pantalla de Orden de Despacho del mismo modulo, dentro del mismo escritorio. */
     private void abrirOrdenDespacho() {
         FrmOrdenDespacho frm = new FrmOrdenDespacho();
-        frm.setLocationRelativeTo(this);
-        frm.setVisible(true);
+        JDesktopPane desktop = getDesktopPane();
+        if (desktop != null) {
+            desktop.add(frm);
+            frm.setVisible(true);
+            try {
+                frm.setSelected(true);
+            } catch (java.beans.PropertyVetoException ignored) {
+            }
+        } else {
+            frm.setVisible(true);
+        }
     }
 
     private void limpiarFormulario() {
@@ -260,9 +273,5 @@ public class FrmPago extends JFrame {
         cbxMetodo.setSelectedIndex(0);
         actualizarCamposMetodo();
         txtIdFactura.requestFocus();
-    }
-
-    public static void main(String[] args) {
-        SwingUtilities.invokeLater(() -> new FrmPago().setVisible(true));
     }
 }

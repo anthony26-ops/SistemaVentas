@@ -1,11 +1,14 @@
 package controlador;
 
 import dao.OrdenDespachoDAO;
+import dao.OrdenVentaDAO;
 import dao.impl.OrdenDespachoDAOImpl;
+import dao.impl.OrdenVentaDAOImpl;
 import java.util.Date;
 import java.util.List;
 import modelo.DetalleOrdenDespacho;
 import modelo.OrdenDespacho;
+import modelo.OrdenVenta;
 
 /**
  * Controlador del modulo de Orden de Despacho. Solo logica de negocio,
@@ -14,12 +17,24 @@ import modelo.OrdenDespacho;
 public class OrdenDespachoController {
 
     private final OrdenDespachoDAO ordenDespachoDAO;
+    private final OrdenVentaDAO ordenVentaDAO;
 
     /** Estados validos por los que puede pasar una orden de despacho. */
     public static final String[] ESTADOS = {"PENDIENTE", "EN RUTA", "ENTREGADA", "CANCELADA"};
 
     public OrdenDespachoController() {
         this.ordenDespachoDAO = new OrdenDespachoDAOImpl();
+        this.ordenVentaDAO = new OrdenVentaDAOImpl();
+    }
+
+    /** Órdenes de venta listas para despachar (estado "Pendiente"). */
+    public List<OrdenVenta> listarOrdenesPendientes() {
+        return ordenVentaDAO.listarPendientes();
+    }
+
+    /** Carga una orden de venta completa, con su detalle real de productos. */
+    public OrdenVenta obtenerOrdenVenta(int idOrdenVenta) {
+        return ordenVentaDAO.obtenerOrdenPorId(idOrdenVenta);
     }
 
     /**
@@ -33,6 +48,16 @@ public class OrdenDespachoController {
         if (idOrdenVenta <= 0) {
             throw new Exception("Debe indicar la orden de venta que se va a despachar.");
         }
+
+        OrdenVenta ordenVenta = ordenVentaDAO.obtenerOrdenPorId(idOrdenVenta);
+        if (ordenVenta == null) {
+            throw new Exception("La orden de venta No. " + idOrdenVenta + " no existe.");
+        }
+        if (!"Pendiente".equalsIgnoreCase(ordenVenta.getEstado())) {
+            throw new Exception("La orden No. " + idOrdenVenta + " ya está en estado \""
+                    + ordenVenta.getEstado() + "\" y no se puede volver a despachar.");
+        }
+
         if (direccionEntrega == null || direccionEntrega.trim().isEmpty()) {
             throw new Exception("Debe ingresar la direccion de entrega.");
         }

@@ -22,6 +22,14 @@ public class ProductoController {
         dao.guardar(p);
     }
 
+    public boolean actualizar(Producto p) {
+        return dao.actualizar(p);
+    }
+
+    public boolean eliminar(int idProducto) {
+        return dao.eliminar(idProducto);
+    }
+
     public List<Producto> listar() {
         return dao.listar();
     }
@@ -40,5 +48,13 @@ public class ProductoController {
 
     public List<Proveedor> listarProveedores() {
         return ((ProductoDAOImpl) dao).listarProveedores();
+    }
+
+    public Categoria guardarCategoria(String nombre, String descripcion) {
+        return ((ProductoDAOImpl) dao).insertarCategoria(nombre, descripcion);
+    }
+
+    public Proveedor guardarProveedor(String nombreEmpresa, String telefono, String direccion) {
+        return ((ProductoDAOImpl) dao).insertarProveedor(nombreEmpresa, telefono, direccion);
     }
 }

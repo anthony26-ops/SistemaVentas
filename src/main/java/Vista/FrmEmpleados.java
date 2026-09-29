@@ -25,6 +25,15 @@ public class FrmEmpleados extends JInternalFrame {
     private void configurarTabla() {
         modeloTabla = new DefaultTableModel(new String[]{"ID", "Nombre", "Apellido", "Teléfono", "Email", "Puesto", "Salario"}, 0);
         tablaEmpleados.setModel(modeloTabla);
+        // Sin este listener, hacer clic en una fila no cargaba nada en el
+        // formulario: como txtId está deshabilitado, no había forma de
+        // indicar qué empleado actualizar o eliminar.
+        tablaEmpleados.addMouseListener(new java.awt.event.MouseAdapter() {
+            @Override
+            public void mouseClicked(java.awt.event.MouseEvent evt) {
+                tablaEmpleadosMouseClicked(evt);
+            }
+        });
     }
 
     // Método que faltaba implementar
@@ -153,6 +162,9 @@ public class FrmEmpleados extends JInternalFrame {
             }
         ));
         jScrollPane1.setViewportView(tablaEmpleados);
+
+        txtId.setEnabled(false);
+        txtId.setToolTipText("El ID se genera automáticamente al guardar.");
 
         txtNombre.addActionListener(this::txtNombreActionPerformed);
 
@@ -359,6 +371,10 @@ public class FrmEmpleados extends JInternalFrame {
                 JOptionPane.showMessageDialog(this, "Empleado eliminado.");
                 cargarTabla();
                 limpiarCampos();
+            } else {
+                JOptionPane.showMessageDialog(this,
+                        "No se pudo eliminar: el empleado ya tiene registros relacionados (usuario, pedidos, etc.).",
+                        "Error", JOptionPane.ERROR_MESSAGE);
             }
         } catch (NumberFormatException ex) {
             JOptionPane.showMessageDialog(this, "El ID debe ser numérico.", "Error", JOptionPane.ERROR_MESSAGE);

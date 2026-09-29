@@ -25,6 +25,15 @@ public class FrmClientes extends JInternalFrame {
     private void configurarTabla() {
         modeloTabla = new DefaultTableModel(new String[]{"ID", "Nombre", "Apellido", "Teléfono", "Email", "NIT"}, 0);
         tablaClientes.setModel(modeloTabla);
+        // Sin este listener, hacer clic en una fila no cargaba nada en el
+        // formulario: como txtId está deshabilitado, no había forma de
+        // indicar qué cliente actualizar o eliminar.
+        tablaClientes.addMouseListener(new java.awt.event.MouseAdapter() {
+            @Override
+            public void mouseClicked(java.awt.event.MouseEvent evt) {
+                tablaClientesMouseClicked(evt);
+            }
+        });
     }
 
     private void cargarTabla() {
@@ -66,7 +75,6 @@ public class FrmClientes extends JInternalFrame {
         jLabel7 = new javax.swing.JLabel();
         jScrollPane1 = new javax.swing.JScrollPane();
         tablaClientes = new javax.swing.JTable();
-        jLabel8 = new javax.swing.JLabel();
         btnGuardar = new javax.swing.JButton();
         btnActualizar = new javax.swing.JButton();
         btnEliminar = new javax.swing.JButton();
@@ -76,7 +84,6 @@ public class FrmClientes extends JInternalFrame {
         txtTelefono = new javax.swing.JTextField();
         txtEmail = new javax.swing.JTextField();
         txtNit = new javax.swing.JTextField();
-        txtSalario = new javax.swing.JTextField();
 
         setClosable(true);
         setIconifiable(true);
@@ -131,8 +138,6 @@ public class FrmClientes extends JInternalFrame {
         });
         jScrollPane1.setViewportView(tablaClientes);
 
-        jLabel8.setText("Salario :");
-
         btnGuardar.setText("Guardar");
         btnGuardar.addActionListener(this::btnGuardarActionPerformed);
 
@@ -170,19 +175,14 @@ public class FrmClientes extends JInternalFrame {
                             .addComponent(txtApellido)
                             .addComponent(txtTelefono))
                         .addGap(44, 44, 44)
-                        .addGroup(layout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING, false)
-                            .addGroup(layout.createSequentialGroup()
-                                .addComponent(jLabel8)
-                                .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.UNRELATED)
-                                .addComponent(txtSalario, javax.swing.GroupLayout.DEFAULT_SIZE, 115, Short.MAX_VALUE))
-                            .addGroup(layout.createSequentialGroup()
-                                .addGroup(layout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
-                                    .addComponent(jLabel6)
-                                    .addComponent(jLabel7))
-                                .addGap(18, 18, 18)
-                                .addGroup(layout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING, false)
-                                    .addComponent(txtEmail, javax.swing.GroupLayout.DEFAULT_SIZE, 115, Short.MAX_VALUE)
-                                    .addComponent(txtNit))))
+                        .addGroup(layout.createSequentialGroup()
+                            .addGroup(layout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
+                                .addComponent(jLabel6)
+                                .addComponent(jLabel7))
+                            .addGap(18, 18, 18)
+                            .addGroup(layout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING, false)
+                                .addComponent(txtEmail, javax.swing.GroupLayout.DEFAULT_SIZE, 115, Short.MAX_VALUE)
+                                .addComponent(txtNit)))
                         .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED, 116, Short.MAX_VALUE)
                         .addGroup(layout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
                             .addComponent(btnEliminar)
@@ -215,10 +215,8 @@ public class FrmClientes extends JInternalFrame {
                 .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.UNRELATED)
                 .addGroup(layout.createParallelGroup(javax.swing.GroupLayout.Alignment.BASELINE)
                     .addComponent(jLabel4)
-                    .addComponent(jLabel8)
                     .addComponent(btnEliminar)
-                    .addComponent(txtApellido, javax.swing.GroupLayout.PREFERRED_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.PREFERRED_SIZE)
-                    .addComponent(txtSalario, javax.swing.GroupLayout.PREFERRED_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.PREFERRED_SIZE))
+                    .addComponent(txtApellido, javax.swing.GroupLayout.PREFERRED_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.PREFERRED_SIZE))
                 .addGap(18, 18, 18)
                 .addGroup(layout.createParallelGroup(javax.swing.GroupLayout.Alignment.BASELINE)
                     .addComponent(jLabel5)
@@ -243,11 +241,17 @@ public class FrmClientes extends JInternalFrame {
     }//GEN-LAST:event_txtNitActionPerformed
 
     private void btnGuardarActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_btnGuardarActionPerformed
+       if (txtNombre.getText().trim().isEmpty() || txtApellido.getText().trim().isEmpty()) {
+            JOptionPane.showMessageDialog(this, "Complete al menos nombre y apellido.");
+            return;
+       }
        if (controller.guardarCliente(txtNombre.getText(), txtApellido.getText(), txtTelefono.getText(), txtEmail.getText(), txtNit.getText())) {
             JOptionPane.showMessageDialog(this, "Cliente guardado exitosamente.");
             cargarTabla();
             limpiarCampos();
-       }    
+       } else {
+            JOptionPane.showMessageDialog(this, "No se pudo guardar el cliente.", "Error", JOptionPane.ERROR_MESSAGE);
+       }
     }//GEN-LAST:event_btnGuardarActionPerformed
 
     private void btnActualizarActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_btnActualizarActionPerformed
@@ -258,6 +262,8 @@ public class FrmClientes extends JInternalFrame {
                 JOptionPane.showMessageDialog(this, "Cliente actualizado.");
                 cargarTabla();
                 limpiarCampos();
+            } else {
+                JOptionPane.showMessageDialog(this, "No se pudo actualizar el cliente.", "Error", JOptionPane.ERROR_MESSAGE);
             }
         } catch (NumberFormatException ex) {
             JOptionPane.showMessageDialog(this, "El ID debe ser numérico.", "Error", JOptionPane.ERROR_MESSAGE);
@@ -272,6 +278,10 @@ public class FrmClientes extends JInternalFrame {
                 JOptionPane.showMessageDialog(this, "Cliente eliminado.");
                 cargarTabla();
                 limpiarCampos();
+            } else {
+                JOptionPane.showMessageDialog(this,
+                        "No se pudo eliminar: el cliente ya tiene pedidos/facturas registrados.",
+                        "Error", JOptionPane.ERROR_MESSAGE);
             }
         } catch (NumberFormatException ex) {
             JOptionPane.showMessageDialog(this, "El ID debe ser numérico.", "Error", JOptionPane.ERROR_MESSAGE);
@@ -302,7 +312,6 @@ public class FrmClientes extends JInternalFrame {
     private javax.swing.JLabel jLabel5;
     private javax.swing.JLabel jLabel6;
     private javax.swing.JLabel jLabel7;
-    private javax.swing.JLabel jLabel8;
     private javax.swing.JScrollPane jScrollPane1;
     private javax.swing.JTable tablaClientes;
     private javax.swing.JTextField txtApellido;
@@ -310,7 +319,6 @@ public class FrmClientes extends JInternalFrame {
     private javax.swing.JTextField txtId;
     private javax.swing.JTextField txtNit;
     private javax.swing.JTextField txtNombre;
-    private javax.swing.JTextField txtSalario;
     private javax.swing.JTextField txtTelefono;
     // End of variables declaration//GEN-END:variables
 }

@@ -86,6 +86,16 @@ public class FacturaController {
      * líneas, y descuenta la existencia de cada producto.
      */
     public boolean crearFactura(int idCliente, int idEmpleado, List<DetalleFactura> detalles, String estado) throws Exception {
+        return crearFactura(idCliente, idEmpleado, detalles, estado, new java.util.Date());
+    }
+
+    /**
+     * Igual que crearFactura, pero recibiendo la fecha elegida en el
+     * selector de calendario de la pantalla en vez de asumir siempre
+     * "ahora mismo".
+     */
+    public boolean crearFactura(int idCliente, int idEmpleado, List<DetalleFactura> detalles, String estado,
+            java.util.Date fecha) throws Exception {
         if (detalles == null || detalles.isEmpty()) {
             throw new Exception("La factura debe tener al menos un producto.");
         }
@@ -96,7 +106,7 @@ public class FacturaController {
         }
 
         Factura factura = new Factura();
-        factura.setFecha(new java.sql.Date(System.currentTimeMillis()));
+        factura.setFecha(new java.sql.Date((fecha != null ? fecha : new java.util.Date()).getTime()));
 
         Cliente cliente = new Cliente();
         cliente.setId(idCliente);
@@ -113,18 +123,41 @@ public class FacturaController {
         return facturaDAO.registrarFactura(factura);
     }
 
-    /** Órdenes de venta listas para facturar (estado "Pendiente"). */
-    public List<OrdenVenta> listarOrdenesPendientes() {
-        return ordenVentaDAO.listarPendientes();
+    /**
+     * Órdenes de venta listas para facturar: ya fueron despachadas (y por lo
+     * tanto ya se les descontó el inventario). Este es el paso 7 del flujo
+     * obligatorio: Cliente -&gt; OrdenVenta -&gt; Despacho -&gt; Salida de
+     * Inventario -&gt; Facturación.
+     */
+    public List<OrdenVenta> listarOrdenesListasParaFacturar() {
+        return ordenVentaDAO.listarDespachadas();
+    }
+
+    public OrdenVenta obtenerOrden(int idOrdenVenta) {
+        return ordenVentaDAO.obtenerOrdenPorId(idOrdenVenta);
     }
 
     /**
-     * Genera la factura a partir de una OrdenVenta ya registrada: copia su
-     * detalle, descuenta inventario y marca la orden como "Facturada".
+     * Genera la factura a partir de una OrdenVenta ya despachada: copia su
+     * detalle y marca la orden como "Facturada". No vuelve a descontar
+     * inventario (ya se descontó al confirmar el despacho). Devuelve null
+     * si la orden todavía no está despachada.
      */
     public Factura generarFacturaDesdeOrden(int idOrdenVenta) {
         OrdenVenta orden = new OrdenVenta();
         orden.setIdOrdenVenta(idOrdenVenta);
         return facturaDAO.generarFacturaDesdeOrden(orden);
+    }
+
+    public Factura obtenerFacturaPorOrden(int idOrdenVenta) {
+        return facturaDAO.obtenerFacturaPorOrden(idOrdenVenta);
+    }
+
+    public Factura obtenerFacturaPorId(int idFactura) {
+        return facturaDAO.obtenerFacturaPorId(idFactura);
+    }
+
+    public List<Factura> listarFacturas() {
+        return facturaDAO.listarFacturas();
     }
 }

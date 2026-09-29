@@ -15,6 +15,9 @@ public interface OrdenVentaDAO {
     /** Órdenes que todavía no se facturaron ni despacharon. */
     List<OrdenVenta> listarPendientes();
 
+    /** Órdenes ya despachadas, listas para facturar. */
+    List<OrdenVenta> listarDespachadas();
+
     /** Cambia el estado (Pendiente / Facturada / Despachada / Cancelada). */
     boolean actualizarEstado(int idOrden, String estado);
 }

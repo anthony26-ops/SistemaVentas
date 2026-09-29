@@ -7,7 +7,7 @@ import modelo.Producto;
  *
  * @author Aramis Ramos
  */
-public class FrmOrdenVenta extends javax.swing.JFrame {
+public class FrmOrdenVenta extends javax.swing.JInternalFrame {
 
     private static final java.util.logging.Logger logger = java.util.logging.Logger.getLogger(FrmOrdenVenta.class.getName());
     private final controlador.OrdenVentaController controller = new controlador.OrdenVentaController();
@@ -73,7 +73,7 @@ public class FrmOrdenVenta extends javax.swing.JFrame {
         jLabel1 = new javax.swing.JLabel();
         jLabel2 = new javax.swing.JLabel();
         jLabel3 = new javax.swing.JLabel();
-        jTextField1 = new javax.swing.JTextField();
+        spnFecha = new javax.swing.JSpinner();
         cbxEmpleado = new javax.swing.JComboBox<>();
         cbxCliente = new javax.swing.JComboBox<>();
         jLabel4 = new javax.swing.JLabel();
@@ -88,6 +88,11 @@ public class FrmOrdenVenta extends javax.swing.JFrame {
         btnLimpiar = new javax.swing.JButton();
 
         setDefaultCloseOperation(javax.swing.WindowConstants.DISPOSE_ON_CLOSE);
+        setClosable(true);
+        setIconifiable(true);
+        setMaximizable(true);
+        setResizable(true);
+        setTitle("Hacer Pedido");
 
         javax.swing.GroupLayout jPanel2Layout = new javax.swing.GroupLayout(jPanel2);
         jPanel2.setLayout(jPanel2Layout);
@@ -108,7 +113,8 @@ public class FrmOrdenVenta extends javax.swing.JFrame {
 
         jLabel3.setText("Vendedor:");
 
-        jTextField1.setText("jTextField1");
+        spnFecha.setModel(new javax.swing.SpinnerDateModel(new java.util.Date(), null, null, java.util.Calendar.DAY_OF_MONTH));
+        spnFecha.setEditor(new javax.swing.JSpinner.DateEditor(spnFecha, "dd/MM/yyyy"));
 
         cbxEmpleado.setModel(new javax.swing.DefaultComboBoxModel<>(new String[] { "Item 1", "Item 2", "Item 3", "Item 4" }));
 
@@ -168,7 +174,7 @@ public class FrmOrdenVenta extends javax.swing.JFrame {
                         .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED)
                         .addGroup(jPanel1Layout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
                             .addGroup(jPanel1Layout.createSequentialGroup()
-                                .addComponent(jTextField1, javax.swing.GroupLayout.PREFERRED_SIZE, 119, javax.swing.GroupLayout.PREFERRED_SIZE)
+                                .addComponent(spnFecha, javax.swing.GroupLayout.PREFERRED_SIZE, 119, javax.swing.GroupLayout.PREFERRED_SIZE)
                                 .addGap(33, 33, 33)
                                 .addComponent(jLabel2)
                                 .addGap(18, 18, 18)
@@ -202,7 +208,7 @@ public class FrmOrdenVenta extends javax.swing.JFrame {
                 .addGap(36, 36, 36)
                 .addGroup(jPanel1Layout.createParallelGroup(javax.swing.GroupLayout.Alignment.BASELINE)
                     .addComponent(jLabel1)
-                    .addComponent(jTextField1, javax.swing.GroupLayout.PREFERRED_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.PREFERRED_SIZE)
+                    .addComponent(spnFecha, javax.swing.GroupLayout.PREFERRED_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.PREFERRED_SIZE)
                     .addComponent(cbxCliente, javax.swing.GroupLayout.PREFERRED_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.PREFERRED_SIZE)
                     .addComponent(jLabel2)
                     .addComponent(cbxEmpleado, javax.swing.GroupLayout.PREFERRED_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.PREFERRED_SIZE)
@@ -257,10 +263,11 @@ public class FrmOrdenVenta extends javax.swing.JFrame {
     int idCliente = idDesdeItemCombo(cbxCliente.getSelectedItem());
     int idEmpleado = idDesdeItemCombo(cbxEmpleado.getSelectedItem());
     String estado = "Pendiente"; // Nuevo campo obligatorio
+    java.util.Date fecha = (java.util.Date) spnFecha.getValue();
 
     // Llamar a crearPedido con el controlador puro (sin dependencias de Swing),
     // guardando también el detalle real de productos.
-    boolean exito = controller.crearPedido(idCliente, idEmpleado, detallesActuales, estado);
+    boolean exito = controller.crearPedido(idCliente, idEmpleado, detallesActuales, estado, fecha);
     
     if (exito) {
         javax.swing.JOptionPane.showMessageDialog(this, "¡Orden registrada con éxito!");
@@ -327,6 +334,7 @@ public class FrmOrdenVenta extends javax.swing.JFrame {
 
     private void btnLimpiarActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_btnLimpiarActionPerformed
         cargarCombos();
+        spnFecha.setValue(new java.util.Date());
         if (cbxCliente.getItemCount() > 0) {
     cbxCliente.setSelectedIndex(0);
 }
@@ -341,30 +349,6 @@ public class FrmOrdenVenta extends javax.swing.JFrame {
     detallesActuales.clear();
     }//GEN-LAST:event_btnLimpiarActionPerformed
 
-    /**
-     * @param args the command line arguments
-     */
-    public static void main(String args[]) {
-        /* Set the Nimbus look and feel */
-        //<editor-fold defaultstate="collapsed" desc=" Look and feel setting code (optional) ">
-        /* If Nimbus (introduced in Java SE 6) is not available, stay with the default look and feel.
-         * For details see http://download.oracle.com/javase/tutorial/uiswing/lookandfeel/plaf.html 
-         */
-        try {
-            for (javax.swing.UIManager.LookAndFeelInfo info : javax.swing.UIManager.getInstalledLookAndFeels()) {
-                if ("Nimbus".equals(info.getName())) {
-                    javax.swing.UIManager.setLookAndFeel(info.getClassName());
-                    break;
-                }
-            }
-        } catch (ReflectiveOperationException | javax.swing.UnsupportedLookAndFeelException ex) {
-            logger.log(java.util.logging.Level.SEVERE, null, ex);
-        }
-        //</editor-fold>
-
-        /* Create and display the form */
-        java.awt.EventQueue.invokeLater(() -> new FrmOrdenVenta().setVisible(true));
-    }
 
     // Variables declaration - do not modify//GEN-BEGIN:variables
     public javax.swing.JButton btnAgregar;
@@ -382,7 +366,7 @@ public class FrmOrdenVenta extends javax.swing.JFrame {
     private javax.swing.JPanel jPanel2;
     private javax.swing.JScrollPane jScrollPane1;
     private javax.swing.JTabbedPane jTabbedPane1;
-    private javax.swing.JTextField jTextField1;
+    private javax.swing.JSpinner spnFecha;
     public javax.swing.JLabel lblTotal;
     public javax.swing.JSpinner spnCantidad;
     public javax.swing.JTable tblDetalles;

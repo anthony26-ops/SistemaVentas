@@ -69,8 +69,31 @@ public class OrdenVentaController {
      * generarse a partir de la orden real.
      */
     public boolean crearPedido(int idCliente, int idEmpleado, List<DetalleOrdenVenta> detalles, String estado) throws Exception {
+        return crearPedido(idCliente, idEmpleado, detalles, estado, new java.util.Date());
+    }
+
+    /**
+     * Igual que crearPedido, pero recibiendo la fecha elegida en el
+     * selector de calendario de la pantalla en vez de asumir siempre
+     * "ahora mismo".
+     */
+    public boolean crearPedido(int idCliente, int idEmpleado, List<DetalleOrdenVenta> detalles, String estado,
+            java.util.Date fecha) throws Exception {
         if (detalles == null || detalles.isEmpty()) {
             throw new Exception("El pedido debe tener al menos un producto.");
+        }
+
+        // Paso 4 del flujo obligatorio: validar que exista inventario
+        // suficiente para los productos solicitados, ANTES de crear la orden.
+        for (DetalleOrdenVenta d : detalles) {
+            Producto producto = productoDAO.buscarPorId(d.getProducto().getIdProducto());
+            if (producto == null) {
+                throw new Exception("El producto '" + d.getProducto().getNombre() + "' ya no existe en el catálogo.");
+            }
+            if (producto.getExistencia() < d.getCantidad()) {
+                throw new Exception("No hay existencia suficiente de '" + producto.getNombre() + "'. "
+                        + "Disponible: " + producto.getExistencia() + ", solicitado: " + d.getCantidad() + ".");
+            }
         }
 
         double total = 0;
@@ -79,7 +102,7 @@ public class OrdenVentaController {
         }
 
         OrdenVenta orden = new OrdenVenta();
-        orden.setFecha(new java.sql.Date(System.currentTimeMillis()));
+        orden.setFecha(new java.sql.Date((fecha != null ? fecha : new java.util.Date()).getTime()));
 
         Cliente cliente = new Cliente();
         cliente.setId(idCliente);
@@ -98,6 +121,15 @@ public class OrdenVentaController {
 
     public List<OrdenVenta> listarPendientes() {
         return ordenDAO.listarPendientes();
+    }
+
+    public List<OrdenVenta> listarTodas() {
+        return ordenDAO.listarOrdenes();
+    }
+
+    /** Orden completa (con su detalle de productos) para pantallas de consulta. */
+    public OrdenVenta obtenerOrden(int idOrdenVenta) {
+        return ordenDAO.obtenerOrdenPorId(idOrdenVenta);
     }
 
     /**

@@ -7,12 +7,15 @@ import modelo.Producto;
  *
  * @author Aramis Ramos
  */
-public class FrmFacturacion extends javax.swing.JFrame {
+public class FrmFacturacion extends javax.swing.JInternalFrame {
 
     private static final java.util.logging.Logger logger = java.util.logging.Logger.getLogger(FrmFacturacion.class.getName());
     private final controlador.FacturaController controller = new controlador.FacturaController();
     private final java.util.List<DetalleFactura> detallesActuales = new java.util.ArrayList<>();
     private final java.util.Map<String, Producto> productosPorNombre = new java.util.HashMap<>();
+
+    private javax.swing.JComboBox<String> cbxOrdenDespachada;
+    private javax.swing.table.DefaultTableModel modeloFacturasGeneradas;
 
     /**
      * Creates new form FrmFacturacion
@@ -20,6 +23,100 @@ public class FrmFacturacion extends javax.swing.JFrame {
     public FrmFacturacion() {
         initComponents();
         cargarCombos();
+        construirTabOrdenesDespachadas();
+    }
+
+    /**
+     * Llena la pestaña "Consultar Historial" (antes vacía) con el paso 7 del
+     * flujo obligatorio: generar la factura a partir de una Orden de Venta
+     * que YA fue despachada (el inventario ya se descontó en ese momento).
+     */
+    private void construirTabOrdenesDespachadas() {
+        javax.swing.JPanel panel = new javax.swing.JPanel(new java.awt.BorderLayout(10, 10));
+        panel.setBorder(javax.swing.BorderFactory.createEmptyBorder(10, 10, 10, 10));
+
+        javax.swing.JPanel panelSuperior = new javax.swing.JPanel(new java.awt.FlowLayout(java.awt.FlowLayout.LEFT, 8, 8));
+        panelSuperior.add(new javax.swing.JLabel("Orden de venta ya despachada:"));
+        cbxOrdenDespachada = new javax.swing.JComboBox<>();
+        cbxOrdenDespachada.setPreferredSize(new java.awt.Dimension(260, 25));
+        panelSuperior.add(cbxOrdenDespachada);
+        javax.swing.JButton btnGenerarFactura = new javax.swing.JButton("Generar factura de esta orden");
+        btnGenerarFactura.addActionListener(e -> generarFacturaDesdeOrdenDespachada());
+        panelSuperior.add(btnGenerarFactura);
+        panel.add(panelSuperior, java.awt.BorderLayout.NORTH);
+
+        modeloFacturasGeneradas = new javax.swing.table.DefaultTableModel(
+                new String[]{"Factura", "Orden venta", "Cliente", "Total", "Estado"}, 0) {
+            @Override
+            public boolean isCellEditable(int fila, int columna) {
+                return false;
+            }
+        };
+        javax.swing.JTable tblFacturas = new javax.swing.JTable(modeloFacturasGeneradas);
+        javax.swing.JScrollPane scroll = new javax.swing.JScrollPane(tblFacturas);
+        scroll.setBorder(javax.swing.BorderFactory.createTitledBorder("Facturas generadas"));
+        panel.add(scroll, java.awt.BorderLayout.CENTER);
+
+        jPanel2.removeAll();
+        jPanel2.setLayout(new java.awt.BorderLayout());
+        jPanel2.add(panel, java.awt.BorderLayout.CENTER);
+
+        cargarOrdenesDespachadas();
+        cargarFacturasGeneradas();
+    }
+
+    private void cargarOrdenesDespachadas() {
+        cbxOrdenDespachada.removeAllItems();
+        for (modelo.OrdenVenta orden : controller.listarOrdenesListasParaFacturar()) {
+            cbxOrdenDespachada.addItem(orden.getIdOrdenVenta() + " - Cliente #" + orden.getCliente().getId()
+                    + " - Total Q" + String.format("%.2f", orden.getTotal()));
+        }
+        if (cbxOrdenDespachada.getItemCount() == 0) {
+            cbxOrdenDespachada.addItem("(No hay órdenes despachadas pendientes de facturar)");
+        }
+    }
+
+    private void cargarFacturasGeneradas() {
+        modeloFacturasGeneradas.setRowCount(0);
+        for (modelo.Factura factura : controller.listarFacturas()) {
+            modeloFacturasGeneradas.addRow(new Object[]{
+                factura.getIdFactura(),
+                factura.getIdOrdenVenta() == null ? "-" : factura.getIdOrdenVenta(),
+                factura.getCliente() != null ? factura.getCliente().getId() : "-",
+                String.format("Q%.2f", factura.getTotal()),
+                factura.getEstado()
+            });
+        }
+    }
+
+    private void generarFacturaDesdeOrdenDespachada() {
+        Object seleccion = cbxOrdenDespachada.getSelectedItem();
+        if (seleccion == null) {
+            return;
+        }
+        String texto = seleccion.toString();
+        int guion = texto.indexOf(" - ");
+        if (guion <= 0) {
+            javax.swing.JOptionPane.showMessageDialog(this, "Seleccione una orden despachada válida.");
+            return;
+        }
+        int idOrdenVenta = Integer.parseInt(texto.substring(0, guion).trim());
+
+        modelo.Factura factura = controller.generarFacturaDesdeOrden(idOrdenVenta);
+        if (factura == null) {
+            javax.swing.JOptionPane.showMessageDialog(this,
+                    "No se pudo generar la factura. Verifique que la orden ya esté despachada.",
+                    "Sistema de Ventas", javax.swing.JOptionPane.WARNING_MESSAGE);
+            return;
+        }
+
+        javax.swing.JOptionPane.showMessageDialog(this,
+                "Factura No. " + factura.getIdFactura() + " generada correctamente.\n"
+                + "Total: Q" + String.format("%.2f", factura.getTotal()),
+                "Sistema de Ventas", javax.swing.JOptionPane.INFORMATION_MESSAGE);
+
+        cargarOrdenesDespachadas();
+        cargarFacturasGeneradas();
     }
 
     /**
@@ -75,7 +172,7 @@ public class FrmFacturacion extends javax.swing.JFrame {
         jLabel1 = new javax.swing.JLabel();
         jLabel2 = new javax.swing.JLabel();
         jLabel3 = new javax.swing.JLabel();
-        jTextField1 = new javax.swing.JTextField();
+        spnFecha = new javax.swing.JSpinner();
         cbxCliente = new javax.swing.JComboBox<>();
         cbxEmpleado = new javax.swing.JComboBox<>();
         jLabel4 = new javax.swing.JLabel();
@@ -90,6 +187,11 @@ public class FrmFacturacion extends javax.swing.JFrame {
         btnLimpiar = new javax.swing.JButton();
 
         setDefaultCloseOperation(javax.swing.WindowConstants.DISPOSE_ON_CLOSE);
+        setClosable(true);
+        setIconifiable(true);
+        setMaximizable(true);
+        setResizable(true);
+        setTitle("Facturación");
 
         javax.swing.GroupLayout jPanel2Layout = new javax.swing.GroupLayout(jPanel2);
         jPanel2.setLayout(jPanel2Layout);
@@ -110,8 +212,8 @@ public class FrmFacturacion extends javax.swing.JFrame {
 
         jLabel3.setText("Vendedor:");
 
-        jTextField1.setText("jTextField1");
-        jTextField1.addActionListener(this::jTextField1ActionPerformed);
+        spnFecha.setModel(new javax.swing.SpinnerDateModel(new java.util.Date(), null, null, java.util.Calendar.DAY_OF_MONTH));
+        spnFecha.setEditor(new javax.swing.JSpinner.DateEditor(spnFecha, "dd/MM/yyyy"));
 
         cbxCliente.setModel(new javax.swing.DefaultComboBoxModel<>(new String[] { "Item 1", "Item 2", "Item 3", "Item 4" }));
         cbxCliente.addActionListener(this::cbxClienteActionPerformed);
@@ -176,7 +278,7 @@ public class FrmFacturacion extends javax.swing.JFrame {
                         .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.UNRELATED)
                         .addComponent(btnAgregar))
                     .addComponent(cbxCliente, 0, 254, Short.MAX_VALUE)
-                    .addComponent(jTextField1, javax.swing.GroupLayout.PREFERRED_SIZE, 123, javax.swing.GroupLayout.PREFERRED_SIZE)
+                    .addComponent(spnFecha, javax.swing.GroupLayout.PREFERRED_SIZE, 123, javax.swing.GroupLayout.PREFERRED_SIZE)
                     .addComponent(cbxProducto, javax.swing.GroupLayout.PREFERRED_SIZE, 199, javax.swing.GroupLayout.PREFERRED_SIZE)
                     .addComponent(cbxEmpleado, 0, javax.swing.GroupLayout.DEFAULT_SIZE, Short.MAX_VALUE))
                 .addContainerGap(503, Short.MAX_VALUE))
@@ -199,7 +301,7 @@ public class FrmFacturacion extends javax.swing.JFrame {
                 .addGap(28, 28, 28)
                 .addGroup(jPanel1Layout.createParallelGroup(javax.swing.GroupLayout.Alignment.BASELINE)
                     .addComponent(jLabel1)
-                    .addComponent(jTextField1, javax.swing.GroupLayout.PREFERRED_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.PREFERRED_SIZE))
+                    .addComponent(spnFecha, javax.swing.GroupLayout.PREFERRED_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.PREFERRED_SIZE))
                 .addGap(9, 9, 9)
                 .addGroup(jPanel1Layout.createParallelGroup(javax.swing.GroupLayout.Alignment.BASELINE)
                     .addComponent(jLabel2)
@@ -253,10 +355,6 @@ public class FrmFacturacion extends javax.swing.JFrame {
         pack();
     }// </editor-fold>//GEN-END:initComponents
 
-    private void jTextField1ActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_jTextField1ActionPerformed
-        // TODO add your handling code here:
-    }//GEN-LAST:event_jTextField1ActionPerformed
-
     private void btnGuardarActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_btnGuardarActionPerformed
     try {
     if (tblDetalles.getRowCount() == 0) {
@@ -267,13 +365,14 @@ public class FrmFacturacion extends javax.swing.JFrame {
     // Extraer datos de la pantalla
     int idCliente = idDesdeItemCombo(cbxCliente.getSelectedItem());
     int idEmpleado = idDesdeItemCombo(cbxEmpleado.getSelectedItem());
+    java.util.Date fecha = (java.util.Date) spnFecha.getValue();
 
     // El estado inicial de la factura (cumpliendo el Punto 1)
     String estado = "Emitida";
 
     // Guarda la factura con su detalle real de productos (inserta las
     // líneas y descuenta existencia de cada producto).
-    boolean exito = controller.crearFactura(idCliente, idEmpleado, detallesActuales, estado);
+    boolean exito = controller.crearFactura(idCliente, idEmpleado, detallesActuales, estado, fecha);
 
     if (exito) {
         javax.swing.JOptionPane.showMessageDialog(this, "¡Factura guardada con éxito!");
@@ -342,6 +441,7 @@ public class FrmFacturacion extends javax.swing.JFrame {
     private void btnLimpiarActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_btnLimpiarActionPerformed
     // Reiniciar ComboBox
     cargarCombos();
+    spnFecha.setValue(new java.util.Date());
     if (cbxCliente.getItemCount() > 0) {
     cbxCliente.setSelectedIndex(0);
 }
@@ -358,30 +458,6 @@ public class FrmFacturacion extends javax.swing.JFrame {
     detallesActuales.clear();
     }//GEN-LAST:event_btnLimpiarActionPerformed
 
-    /**
-     * @param args the command line arguments
-     */
-    public static void main(String args[]) {
-        /* Set the Nimbus look and feel */
-        //<editor-fold defaultstate="collapsed" desc=" Look and feel setting code (optional) ">
-        /* If Nimbus (introduced in Java SE 6) is not available, stay with the default look and feel.
-         * For details see http://download.oracle.com/javase/tutorial/uiswing/lookandfeel/plaf.html 
-         */
-        try {
-            for (javax.swing.UIManager.LookAndFeelInfo info : javax.swing.UIManager.getInstalledLookAndFeels()) {
-                if ("Nimbus".equals(info.getName())) {
-                    javax.swing.UIManager.setLookAndFeel(info.getClassName());
-                    break;
-                }
-            }
-        } catch (ReflectiveOperationException | javax.swing.UnsupportedLookAndFeelException ex) {
-            logger.log(java.util.logging.Level.SEVERE, null, ex);
-        }
-        //</editor-fold>
-
-        /* Create and display the form */
-        java.awt.EventQueue.invokeLater(() -> new FrmFacturacion().setVisible(true));
-    }
 
     // Variables declaration - do not modify//GEN-BEGIN:variables
     public javax.swing.JButton btnAgregar;
@@ -401,7 +477,7 @@ public class FrmFacturacion extends javax.swing.JFrame {
     private javax.swing.JTabbedPane jTabbedPane1;
     private javax.swing.JTabbedPane jTabbedPane2;
     private javax.swing.JTabbedPane jTabbedPane3;
-    private javax.swing.JTextField jTextField1;
+    private javax.swing.JSpinner spnFecha;
     public javax.swing.JLabel lblTotal;
     public javax.swing.JSpinner spnCantidad;
     public javax.swing.JTable tblDetalles;
