@@ -243,11 +243,17 @@ public class FrmClientes extends JInternalFrame {
     }//GEN-LAST:event_txtNitActionPerformed
 
     private void btnGuardarActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_btnGuardarActionPerformed
+       if (txtNombre.getText().trim().isEmpty() || txtApellido.getText().trim().isEmpty()) {
+            JOptionPane.showMessageDialog(this, "Complete al menos nombre y apellido.");
+            return;
+       }
        if (controller.guardarCliente(txtNombre.getText(), txtApellido.getText(), txtTelefono.getText(), txtEmail.getText(), txtNit.getText())) {
             JOptionPane.showMessageDialog(this, "Cliente guardado exitosamente.");
             cargarTabla();
             limpiarCampos();
-       }    
+       } else {
+            JOptionPane.showMessageDialog(this, "No se pudo guardar el cliente.", "Error", JOptionPane.ERROR_MESSAGE);
+       }
     }//GEN-LAST:event_btnGuardarActionPerformed
 
     private void btnActualizarActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_btnActualizarActionPerformed
@@ -258,6 +264,8 @@ public class FrmClientes extends JInternalFrame {
                 JOptionPane.showMessageDialog(this, "Cliente actualizado.");
                 cargarTabla();
                 limpiarCampos();
+            } else {
+                JOptionPane.showMessageDialog(this, "No se pudo actualizar el cliente.", "Error", JOptionPane.ERROR_MESSAGE);
             }
         } catch (NumberFormatException ex) {
             JOptionPane.showMessageDialog(this, "El ID debe ser numérico.", "Error", JOptionPane.ERROR_MESSAGE);
@@ -272,6 +280,10 @@ public class FrmClientes extends JInternalFrame {
                 JOptionPane.showMessageDialog(this, "Cliente eliminado.");
                 cargarTabla();
                 limpiarCampos();
+            } else {
+                JOptionPane.showMessageDialog(this,
+                        "No se pudo eliminar: el cliente ya tiene pedidos/facturas registrados.",
+                        "Error", JOptionPane.ERROR_MESSAGE);
             }
         } catch (NumberFormatException ex) {
             JOptionPane.showMessageDialog(this, "El ID debe ser numérico.", "Error", JOptionPane.ERROR_MESSAGE);

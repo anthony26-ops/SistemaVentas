@@ -143,6 +143,10 @@ public class FacturaController {
         return facturaDAO.obtenerFacturaPorOrden(idOrdenVenta);
     }
 
+    public Factura obtenerFacturaPorId(int idFactura) {
+        return facturaDAO.obtenerFacturaPorId(idFactura);
+    }
+
     public List<Factura> listarFacturas() {
         return facturaDAO.listarFacturas();
     }

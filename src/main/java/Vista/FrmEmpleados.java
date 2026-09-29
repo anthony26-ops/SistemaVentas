@@ -359,6 +359,10 @@ public class FrmEmpleados extends JInternalFrame {
                 JOptionPane.showMessageDialog(this, "Empleado eliminado.");
                 cargarTabla();
                 limpiarCampos();
+            } else {
+                JOptionPane.showMessageDialog(this,
+                        "No se pudo eliminar: el empleado ya tiene registros relacionados (usuario, pedidos, etc.).",
+                        "Error", JOptionPane.ERROR_MESSAGE);
             }
         } catch (NumberFormatException ex) {
             JOptionPane.showMessageDialog(this, "El ID debe ser numérico.", "Error", JOptionPane.ERROR_MESSAGE);
