@@ -22,6 +22,14 @@ public class ProductoController {
         dao.guardar(p);
     }
 
+    public boolean actualizar(Producto p) {
+        return dao.actualizar(p);
+    }
+
+    public boolean eliminar(int idProducto) {
+        return dao.eliminar(idProducto);
+    }
+
     public List<Producto> listar() {
         return dao.listar();
     }

@@ -14,12 +14,109 @@ public class FrmFacturacion extends javax.swing.JFrame {
     private final java.util.List<DetalleFactura> detallesActuales = new java.util.ArrayList<>();
     private final java.util.Map<String, Producto> productosPorNombre = new java.util.HashMap<>();
 
+    private javax.swing.JComboBox<String> cbxOrdenDespachada;
+    private javax.swing.table.DefaultTableModel modeloFacturasGeneradas;
+
     /**
      * Creates new form FrmFacturacion
      */
     public FrmFacturacion() {
         initComponents();
         cargarCombos();
+        construirTabOrdenesDespachadas();
+    }
+
+    /**
+     * Llena la pestaña "Consultar Historial" (antes vacía) con el paso 7 del
+     * flujo obligatorio: generar la factura a partir de una Orden de Venta
+     * que YA fue despachada (el inventario ya se descontó en ese momento).
+     */
+    private void construirTabOrdenesDespachadas() {
+        javax.swing.JPanel panel = new javax.swing.JPanel(new java.awt.BorderLayout(10, 10));
+        panel.setBorder(javax.swing.BorderFactory.createEmptyBorder(10, 10, 10, 10));
+
+        javax.swing.JPanel panelSuperior = new javax.swing.JPanel(new java.awt.FlowLayout(java.awt.FlowLayout.LEFT, 8, 8));
+        panelSuperior.add(new javax.swing.JLabel("Orden de venta ya despachada:"));
+        cbxOrdenDespachada = new javax.swing.JComboBox<>();
+        cbxOrdenDespachada.setPreferredSize(new java.awt.Dimension(260, 25));
+        panelSuperior.add(cbxOrdenDespachada);
+        javax.swing.JButton btnGenerarFactura = new javax.swing.JButton("Generar factura de esta orden");
+        btnGenerarFactura.addActionListener(e -> generarFacturaDesdeOrdenDespachada());
+        panelSuperior.add(btnGenerarFactura);
+        panel.add(panelSuperior, java.awt.BorderLayout.NORTH);
+
+        modeloFacturasGeneradas = new javax.swing.table.DefaultTableModel(
+                new String[]{"Factura", "Orden venta", "Cliente", "Total", "Estado"}, 0) {
+            @Override
+            public boolean isCellEditable(int fila, int columna) {
+                return false;
+            }
+        };
+        javax.swing.JTable tblFacturas = new javax.swing.JTable(modeloFacturasGeneradas);
+        javax.swing.JScrollPane scroll = new javax.swing.JScrollPane(tblFacturas);
+        scroll.setBorder(javax.swing.BorderFactory.createTitledBorder("Facturas generadas"));
+        panel.add(scroll, java.awt.BorderLayout.CENTER);
+
+        jPanel2.removeAll();
+        jPanel2.setLayout(new java.awt.BorderLayout());
+        jPanel2.add(panel, java.awt.BorderLayout.CENTER);
+
+        cargarOrdenesDespachadas();
+        cargarFacturasGeneradas();
+    }
+
+    private void cargarOrdenesDespachadas() {
+        cbxOrdenDespachada.removeAllItems();
+        for (modelo.OrdenVenta orden : controller.listarOrdenesListasParaFacturar()) {
+            cbxOrdenDespachada.addItem(orden.getIdOrdenVenta() + " - Cliente #" + orden.getCliente().getId()
+                    + " - Total Q" + String.format("%.2f", orden.getTotal()));
+        }
+        if (cbxOrdenDespachada.getItemCount() == 0) {
+            cbxOrdenDespachada.addItem("(No hay órdenes despachadas pendientes de facturar)");
+        }
+    }
+
+    private void cargarFacturasGeneradas() {
+        modeloFacturasGeneradas.setRowCount(0);
+        for (modelo.Factura factura : controller.listarFacturas()) {
+            modeloFacturasGeneradas.addRow(new Object[]{
+                factura.getIdFactura(),
+                factura.getIdOrdenVenta() == null ? "-" : factura.getIdOrdenVenta(),
+                factura.getCliente() != null ? factura.getCliente().getId() : "-",
+                String.format("Q%.2f", factura.getTotal()),
+                factura.getEstado()
+            });
+        }
+    }
+
+    private void generarFacturaDesdeOrdenDespachada() {
+        Object seleccion = cbxOrdenDespachada.getSelectedItem();
+        if (seleccion == null) {
+            return;
+        }
+        String texto = seleccion.toString();
+        int guion = texto.indexOf(" - ");
+        if (guion <= 0) {
+            javax.swing.JOptionPane.showMessageDialog(this, "Seleccione una orden despachada válida.");
+            return;
+        }
+        int idOrdenVenta = Integer.parseInt(texto.substring(0, guion).trim());
+
+        modelo.Factura factura = controller.generarFacturaDesdeOrden(idOrdenVenta);
+        if (factura == null) {
+            javax.swing.JOptionPane.showMessageDialog(this,
+                    "No se pudo generar la factura. Verifique que la orden ya esté despachada.",
+                    "Sistema de Ventas", javax.swing.JOptionPane.WARNING_MESSAGE);
+            return;
+        }
+
+        javax.swing.JOptionPane.showMessageDialog(this,
+                "Factura No. " + factura.getIdFactura() + " generada correctamente.\n"
+                + "Total: Q" + String.format("%.2f", factura.getTotal()),
+                "Sistema de Ventas", javax.swing.JOptionPane.INFORMATION_MESSAGE);
+
+        cargarOrdenesDespachadas();
+        cargarFacturasGeneradas();
     }
 
     /**

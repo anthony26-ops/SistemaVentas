@@ -5,9 +5,10 @@ import java.util.List;
 
 public class Factura {
     private int idFactura;
+    private Integer idOrdenVenta;
     private Date fecha;
     private Cliente cliente;
-    private Empleado empleado; 
+    private Empleado empleado;
     private List<DetalleFactura> detalles;
     private double total;
     private String estado;
@@ -26,6 +27,9 @@ public class Factura {
 
     public int getIdFactura() { return idFactura; }
     public void setIdFactura(int idFactura) { this.idFactura = idFactura; }
+
+    public Integer getIdOrdenVenta() { return idOrdenVenta; }
+    public void setIdOrdenVenta(Integer idOrdenVenta) { this.idOrdenVenta = idOrdenVenta; }
 
     public Date getFecha() { return fecha; }
     public void setFecha(Date fecha) { this.fecha = fecha; }

@@ -30,10 +30,47 @@ public class FrmProductos extends javax.swing.JFrame {
     public FrmProductos() {
         initComponents();
         cargarCombos();
-        cargarCombos();
         cargarTabla();
         configurarRenderer();
+        tblProductos.addMouseListener(new java.awt.event.MouseAdapter() {
+            @Override
+            public void mouseClicked(java.awt.event.MouseEvent evt) {
+                cargarFilaSeleccionada();
+            }
+        });
+    }
 
+    /** Al hacer clic en una fila, trae el producto completo (por ID) a los campos para editarlo. */
+    private void cargarFilaSeleccionada() {
+        int fila = tblProductos.getSelectedRow();
+        if (fila < 0) {
+            return;
+        }
+        int id = (int) tblProductos.getModel().getValueAt(fila, 0);
+        Producto p = new ProductoController().buscarPorId(id);
+        if (p == null) {
+            return;
+        }
+        txtId.setText(String.valueOf(p.getIdProducto()));
+        txtNombre.setText(p.getNombre());
+        txtDescripcion.setText(p.getDescripcion());
+        txtPrecio.setText(String.valueOf(p.getPrecio()));
+        txtExistencia.setText(String.valueOf(p.getExistencia()));
+        seleccionarPorId(cboCategoria, p.getCategoria() != null ? p.getCategoria().getIdCategoria() : -1);
+        seleccionarPorId(cboProveedor, p.getProveedor() != null ? p.getProveedor().getIdProveedor() : -1);
+    }
+
+    /** Busca en el combo (Categoria o Proveedor) el ítem cuyo id coincida y lo selecciona. */
+    private void seleccionarPorId(javax.swing.JComboBox<?> combo, int id) {
+        for (int i = 0; i < combo.getItemCount(); i++) {
+            Object item = combo.getItemAt(i);
+            int itemId = (item instanceof Categoria) ? ((Categoria) item).getIdCategoria()
+                    : (item instanceof Proveedor) ? ((Proveedor) item).getIdProveedor() : -2;
+            if (itemId == id) {
+                combo.setSelectedIndex(i);
+                return;
+            }
+        }
     }
 
 
@@ -62,6 +99,8 @@ public class FrmProductos extends javax.swing.JFrame {
         jLabel7 = new javax.swing.JLabel();
         btnGuardar = new javax.swing.JButton();
         btnLimpiar = new javax.swing.JButton();
+        btnActualizar = new javax.swing.JButton();
+        btnEliminar = new javax.swing.JButton();
         jScrollPane2 = new javax.swing.JScrollPane();
         tblProductos = new javax.swing.JTable();
         cboCategoria = new javax.swing.JComboBox<>();
@@ -137,6 +176,14 @@ public class FrmProductos extends javax.swing.JFrame {
         btnLimpiar.setText("Limpiar");
         btnLimpiar.addActionListener(this::btnLimpiarActionPerformed);
         getContentPane().add(btnLimpiar, new org.netbeans.lib.awtextra.AbsoluteConstraints(290, 320, 120, 40));
+
+        btnActualizar.setText("Actualizar");
+        btnActualizar.addActionListener(this::btnActualizarActionPerformed);
+        getContentPane().add(btnActualizar, new org.netbeans.lib.awtextra.AbsoluteConstraints(420, 320, 120, 40));
+
+        btnEliminar.setText("Eliminar");
+        btnEliminar.addActionListener(this::btnEliminarActionPerformed);
+        getContentPane().add(btnEliminar, new org.netbeans.lib.awtextra.AbsoluteConstraints(550, 320, 120, 40));
 
         tblProductos.setModel(new javax.swing.table.DefaultTableModel(
             new Object [][] {
@@ -249,9 +296,77 @@ public class FrmProductos extends javax.swing.JFrame {
         txtDescripcion.setText("");
         txtPrecio.setText("");
         txtExistencia.setText("");
-
-        // TODO add your handling code here:
     }//GEN-LAST:event_btnLimpiarActionPerformed
+
+    private void btnActualizarActionPerformed(java.awt.event.ActionEvent evt) {
+        try {
+            if (txtId.getText().trim().isEmpty()) {
+                javax.swing.JOptionPane.showMessageDialog(this,
+                        "Seleccione un producto de la tabla o escriba su ID.");
+                return;
+            }
+            Categoria categoria = (Categoria) cboCategoria.getSelectedItem();
+            Proveedor proveedor = (Proveedor) cboProveedor.getSelectedItem();
+            if (categoria == null || proveedor == null) {
+                javax.swing.JOptionPane.showMessageDialog(this, "Debe seleccionar categoría y proveedor.");
+                return;
+            }
+
+            int id = Integer.parseInt(txtId.getText().trim());
+            String nombre = txtNombre.getText().trim();
+            String descripcion = txtDescripcion.getText().trim();
+            double precio = Double.parseDouble(txtPrecio.getText().trim());
+            int existencia = Integer.parseInt(txtExistencia.getText().trim());
+            Producto p = new Producto(id, nombre, descripcion, precio, existencia, categoria, proveedor);
+
+            if (new ProductoController().actualizar(p)) {
+                javax.swing.JOptionPane.showMessageDialog(this, "Producto actualizado.");
+                cargarTabla();
+                btnLimpiarActionPerformed(evt);
+            } else {
+                javax.swing.JOptionPane.showMessageDialog(this,
+                        "No se pudo actualizar (verifique que el ID exista).",
+                        "Error", javax.swing.JOptionPane.ERROR_MESSAGE);
+            }
+        } catch (NumberFormatException ex) {
+            javax.swing.JOptionPane.showMessageDialog(this,
+                    "ID, precio y existencia deben ser números válidos.",
+                    "Error", javax.swing.JOptionPane.ERROR_MESSAGE);
+        } catch (Exception ex) {
+            javax.swing.JOptionPane.showMessageDialog(this,
+                    "Error al actualizar el producto: " + ex.getMessage(),
+                    "Error", javax.swing.JOptionPane.ERROR_MESSAGE);
+        }
+    }
+
+    private void btnEliminarActionPerformed(java.awt.event.ActionEvent evt) {
+        if (txtId.getText().trim().isEmpty()) {
+            javax.swing.JOptionPane.showMessageDialog(this,
+                    "Seleccione un producto de la tabla o escriba su ID.");
+            return;
+        }
+        int confirmar = javax.swing.JOptionPane.showConfirmDialog(this,
+                "¿Seguro que desea eliminar este producto?", "Confirmar",
+                javax.swing.JOptionPane.YES_NO_OPTION);
+        if (confirmar != javax.swing.JOptionPane.YES_OPTION) {
+            return;
+        }
+        try {
+            int id = Integer.parseInt(txtId.getText().trim());
+            if (new ProductoController().eliminar(id)) {
+                javax.swing.JOptionPane.showMessageDialog(this, "Producto eliminado.");
+                cargarTabla();
+                btnLimpiarActionPerformed(evt);
+            } else {
+                javax.swing.JOptionPane.showMessageDialog(this,
+                        "No se pudo eliminar (puede estar referenciado por otros registros).",
+                        "Error", javax.swing.JOptionPane.ERROR_MESSAGE);
+            }
+        } catch (NumberFormatException ex) {
+            javax.swing.JOptionPane.showMessageDialog(this, "El ID debe ser numérico.",
+                    "Error", javax.swing.JOptionPane.ERROR_MESSAGE);
+        }
+    }
 
     /**
      * @param args the command line arguments
@@ -279,6 +394,8 @@ public class FrmProductos extends javax.swing.JFrame {
     }
 
     // Variables declaration - do not modify//GEN-BEGIN:variables
+    private javax.swing.JButton btnActualizar;
+    private javax.swing.JButton btnEliminar;
     private javax.swing.JButton btnGuardar;
     private javax.swing.JButton btnLimpiar;
     private javax.swing.JComboBox<Categoria> cboCategoria;

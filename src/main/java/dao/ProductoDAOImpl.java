@@ -36,6 +36,38 @@ public class ProductoDAOImpl implements ProductoDAO {
     }
     
     @Override
+    public boolean actualizar(Producto p) {
+        String sql = "UPDATE ventas_productos SET nombre=?, descripcion=?, precio=?, existencia=?, categoria_id=?, proveedor_id=? WHERE id_producto=?";
+        try (Connection con = ConexionMySQL.getConnection();
+             PreparedStatement ps = con.prepareStatement(sql)) {
+            ps.setString(1, p.getNombre());
+            ps.setString(2, p.getDescripcion());
+            ps.setDouble(3, p.getPrecio());
+            ps.setInt(4, p.getExistencia());
+            ps.setInt(5, p.getCategoria().getIdCategoria());
+            ps.setInt(6, p.getProveedor().getIdProveedor());
+            ps.setInt(7, p.getIdProducto());
+            return ps.executeUpdate() > 0;
+        } catch (SQLException | ConexionException e) {
+            e.printStackTrace();
+            return false;
+        }
+    }
+
+    @Override
+    public boolean eliminar(int idProducto) {
+        String sql = "DELETE FROM ventas_productos WHERE id_producto=?";
+        try (Connection con = ConexionMySQL.getConnection();
+             PreparedStatement ps = con.prepareStatement(sql)) {
+            ps.setInt(1, idProducto);
+            return ps.executeUpdate() > 0;
+        } catch (SQLException | ConexionException e) {
+            e.printStackTrace();
+            return false;
+        }
+    }
+
+    @Override
     public List<Producto> listar() {
     List<Producto> lista = new ArrayList<>();
     String sql = "SELECT * FROM ventas_productos";

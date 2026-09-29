@@ -113,18 +113,37 @@ public class FacturaController {
         return facturaDAO.registrarFactura(factura);
     }
 
-    /** Órdenes de venta listas para facturar (estado "Pendiente"). */
-    public List<OrdenVenta> listarOrdenesPendientes() {
-        return ordenVentaDAO.listarPendientes();
+    /**
+     * Órdenes de venta listas para facturar: ya fueron despachadas (y por lo
+     * tanto ya se les descontó el inventario). Este es el paso 7 del flujo
+     * obligatorio: Cliente -&gt; OrdenVenta -&gt; Despacho -&gt; Salida de
+     * Inventario -&gt; Facturación.
+     */
+    public List<OrdenVenta> listarOrdenesListasParaFacturar() {
+        return ordenVentaDAO.listarDespachadas();
+    }
+
+    public OrdenVenta obtenerOrden(int idOrdenVenta) {
+        return ordenVentaDAO.obtenerOrdenPorId(idOrdenVenta);
     }
 
     /**
-     * Genera la factura a partir de una OrdenVenta ya registrada: copia su
-     * detalle, descuenta inventario y marca la orden como "Facturada".
+     * Genera la factura a partir de una OrdenVenta ya despachada: copia su
+     * detalle y marca la orden como "Facturada". No vuelve a descontar
+     * inventario (ya se descontó al confirmar el despacho). Devuelve null
+     * si la orden todavía no está despachada.
      */
     public Factura generarFacturaDesdeOrden(int idOrdenVenta) {
         OrdenVenta orden = new OrdenVenta();
         orden.setIdOrdenVenta(idOrdenVenta);
         return facturaDAO.generarFacturaDesdeOrden(orden);
+    }
+
+    public Factura obtenerFacturaPorOrden(int idOrdenVenta) {
+        return facturaDAO.obtenerFacturaPorOrden(idOrdenVenta);
+    }
+
+    public List<Factura> listarFacturas() {
+        return facturaDAO.listarFacturas();
     }
 }

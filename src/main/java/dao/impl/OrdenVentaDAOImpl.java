@@ -79,6 +79,11 @@ public class OrdenVentaDAOImpl implements OrdenVentaDAO {
         return listarPorFiltro("Pendiente");
     }
 
+    @Override
+    public List<OrdenVenta> listarDespachadas() {
+        return listarPorFiltro("Despachada");
+    }
+
     private List<OrdenVenta> listarPorFiltro(String estado) {
         List<OrdenVenta> lista = new ArrayList<>();
         String sql = estado == null ? "SELECT * FROM ordenes_venta" : "SELECT * FROM ordenes_venta WHERE estado = ?";
