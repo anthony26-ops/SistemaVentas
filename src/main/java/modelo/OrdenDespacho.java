@@ -12,6 +12,7 @@ public class OrdenDespacho {
 
     private int idOrdenDespacho;
     private int idOrdenVenta;
+    private Integer idBodega;
     private Date fechaDespacho;
     private String direccionEntrega;
     private String transportista;
@@ -38,6 +39,9 @@ public class OrdenDespacho {
 
     public int getIdOrdenVenta() { return idOrdenVenta; }
     public void setIdOrdenVenta(int idOrdenVenta) { this.idOrdenVenta = idOrdenVenta; }
+
+    public Integer getIdBodega() { return idBodega; }
+    public void setIdBodega(Integer idBodega) { this.idBodega = idBodega; }
 
     public Date getFechaDespacho() { return fechaDespacho; }
     public void setFechaDespacho(Date fechaDespacho) { this.fechaDespacho = fechaDespacho; }
