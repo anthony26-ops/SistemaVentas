@@ -22,6 +22,11 @@ public class FrmFacturacion extends javax.swing.JInternalFrame {
      */
     public FrmFacturacion() {
         initComponents();
+        // Mismo problema que en FrmOrdenVenta: la tabla de detalle trae 4
+        // filas de diseño llenas de null que NetBeans deja por defecto, y si
+        // no se limpian, el primer producto agregado revienta al sumar el
+        // total (NullPointerException en una de esas filas null).
+        ((javax.swing.table.DefaultTableModel) tblDetalles.getModel()).setRowCount(0);
         cargarCombos();
         construirTabOrdenesDespachadas();
     }
