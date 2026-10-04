@@ -2,6 +2,7 @@ package bd;
 
 import java.sql.Connection;
 import java.sql.DriverManager;
+import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.sql.Statement;
 
@@ -173,12 +174,13 @@ public class ConexionMySQL {
 
             stmt.executeUpdate(
                     "CREATE TABLE IF NOT EXISTS ventas_inventario ("
-                    + "id_inventario INT NOT NULL PRIMARY KEY,"
+                    + "id_inventario INT AUTO_INCREMENT PRIMARY KEY,"
                     + "producto_id INT NOT NULL,"
                     + "bodega_id INT NOT NULL,"
                     + "cantidad_disponible INT NOT NULL,"
                     + "CONSTRAINT fk_inventario_producto FOREIGN KEY (producto_id) REFERENCES ventas_productos(id_producto),"
-                    + "CONSTRAINT fk_inventario_bodega FOREIGN KEY (bodega_id) REFERENCES ventas_bodegas(id_bodega)"
+                    + "CONSTRAINT fk_inventario_bodega FOREIGN KEY (bodega_id) REFERENCES ventas_bodegas(id_bodega),"
+                    + "CONSTRAINT uq_inventario_producto_bodega UNIQUE (producto_id, bodega_id)"
                     + ") ENGINE=InnoDB");
 
             // -- sección Factura/DetalleFactura/OrdenVenta/DetalleOrdenVenta -- (Carlos)
@@ -255,11 +257,13 @@ public class ConexionMySQL {
                     "CREATE TABLE IF NOT EXISTS ordenes_despacho ("
                     + "id_orden_despacho INT AUTO_INCREMENT PRIMARY KEY,"
                     + "id_orden_venta INT NOT NULL,"
+                    + "bodega_id INT NULL,"
                     + "fecha_despacho TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,"
                     + "direccion_entrega VARCHAR(200) NOT NULL,"
                     + "transportista VARCHAR(100),"
                     + "estado VARCHAR(20) NOT NULL DEFAULT 'PENDIENTE',"
-                    + "CONSTRAINT fk_od_orden FOREIGN KEY (id_orden_venta) REFERENCES ordenes_venta(id)"
+                    + "CONSTRAINT fk_od_orden FOREIGN KEY (id_orden_venta) REFERENCES ordenes_venta(id),"
+                    + "CONSTRAINT fk_od_bodega FOREIGN KEY (bodega_id) REFERENCES ventas_bodegas(id_bodega)"
                     + ") ENGINE=InnoDB");
 
             stmt.executeUpdate(
@@ -288,6 +292,7 @@ public class ConexionMySQL {
                     + ") ENGINE=InnoDB");
 
             migrarColumnasAutoIncrement(stmt);
+            migrarInventarioPorBodega(stmt);
         } catch (SQLException e) {
             throw new ConexionException("No se pudieron crear las tablas del sistema", e);
         }
@@ -332,6 +337,65 @@ public class ConexionMySQL {
         try {
             stmt.executeUpdate("ALTER TABLE ventas_productos ADD CONSTRAINT fk_producto_proveedor "
                     + "FOREIGN KEY (proveedor_id) REFERENCES ventas_proveedores(id_proveedor)");
+        } catch (SQLException ignored) {
+        }
+    }
+
+    /**
+     * Mismo problema que migrarColumnasAutoIncrement, pero para las
+     * instalaciones que ya tenían "ventas_inventario" y "ordenes_despacho"
+     * creadas antes de que el inventario se llevara por bodega: agrega la
+     * llave autoincremental y la restricción UNIQUE que faltan en
+     * ventas_inventario, y la columna bodega_id (con su FK) en
+     * ordenes_despacho. Es idempotente: cada ALTER va en su propio
+     * try/catch, así que si ya se aplicó antes simplemente falla
+     * silenciosamente y sigue con el siguiente.
+     */
+    private static void migrarInventarioPorBodega(Statement stmt) {
+        try {
+            stmt.executeUpdate("ALTER TABLE ventas_inventario MODIFY id_inventario INT NOT NULL AUTO_INCREMENT");
+        } catch (SQLException ignored) {
+        }
+        try {
+            stmt.executeUpdate("ALTER TABLE ventas_inventario ADD CONSTRAINT uq_inventario_producto_bodega "
+                    + "UNIQUE (producto_id, bodega_id)");
+        } catch (SQLException ignored) {
+        }
+        try {
+            stmt.executeUpdate("ALTER TABLE ordenes_despacho ADD COLUMN bodega_id INT NULL");
+        } catch (SQLException ignored) {
+        }
+        try {
+            stmt.executeUpdate("ALTER TABLE ordenes_despacho ADD CONSTRAINT fk_od_bodega "
+                    + "FOREIGN KEY (bodega_id) REFERENCES ventas_bodegas(id_bodega)");
+        } catch (SQLException ignored) {
+        }
+
+        // Migración de datos (una sola vez): si no existe todavía ninguna
+        // bodega, se crea una por defecto; y a cualquier producto que tenga
+        // existencia pero ningún renglón en ventas_inventario (típicamente
+        // los productos que ya existían antes de este cambio) se le acredita
+        // esa existencia en la primera bodega disponible, para no perder el
+        // stock que ya se había cargado.
+        try (ResultSet rsBodegas = stmt.executeQuery("SELECT id_bodega FROM ventas_bodegas ORDER BY id_bodega LIMIT 1")) {
+            int idBodegaDefault;
+            if (rsBodegas.next()) {
+                idBodegaDefault = rsBodegas.getInt("id_bodega");
+            } else {
+                stmt.executeUpdate("INSERT INTO ventas_bodegas (nombre, direccion, telefono) "
+                        + "VALUES ('Bodega Principal', 'Sin dirección registrada', '')");
+                try (ResultSet rsNueva = stmt.executeQuery("SELECT LAST_INSERT_ID() AS id")) {
+                    rsNueva.next();
+                    idBodegaDefault = rsNueva.getInt("id");
+                }
+            }
+
+            String sqlMigrar = "INSERT INTO ventas_inventario (producto_id, bodega_id, cantidad_disponible) "
+                    + "SELECT p.id_producto, " + idBodegaDefault + ", p.existencia "
+                    + "FROM ventas_productos p "
+                    + "WHERE p.existencia > 0 "
+                    + "AND NOT EXISTS (SELECT 1 FROM ventas_inventario i WHERE i.producto_id = p.id_producto)";
+            stmt.executeUpdate(sqlMigrar);
         } catch (SQLException ignored) {
         }
     }

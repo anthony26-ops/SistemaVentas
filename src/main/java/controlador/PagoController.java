@@ -1,26 +1,34 @@
 package controlador;
 
+import dao.FacturaDAO;
 import dao.PagoDAO;
+import dao.impl.FacturaDAOImpl;
 import dao.impl.PagoDAOImpl;
 import java.util.Date;
 import java.util.List;
+import modelo.Factura;
 import modelo.IMetodoPago;
 import modelo.Pago;
 import modelo.PagoEfectivo;
-import modelo.PagoTarjeta;
-import modelo.PagoTransferencia;
 
 /**
  * Controlador del modulo de Pagos. Contiene unicamente logica de negocio:
  * no importa ninguna clase de Swing, por lo que puede reutilizarse desde
  * otra interfaz (web o movil) sin modificarlo.
+ *
+ * Por ahora solo se acepta EFECTIVO (se quitaron Tarjeta y Transferencia
+ * a pedido): son los únicos métodos que de verdad se verificaban contra
+ * algo (el monto recibido en efectivo); los otros dos solo pedían un
+ * número de tarjeta/boleta sin validar nada real.
  */
 public class PagoController {
 
     private final PagoDAO pagoDAO;
+    private final FacturaDAO facturaDAO;
 
     public PagoController() {
         this.pagoDAO = new PagoDAOImpl();
+        this.facturaDAO = new FacturaDAOImpl();
     }
 
     /**
@@ -31,27 +39,25 @@ public class PagoController {
         if (tipo == null) {
             return null;
         }
-        switch (tipo.toUpperCase()) {
-            case "EFECTIVO":
-                double recibido;
-                try {
-                    recibido = Double.parseDouble(datoUno);
-                } catch (NumberFormatException e) {
-                    recibido = 0;
-                }
-                return new PagoEfectivo(recibido);
-            case "TARJETA":
-                return new PagoTarjeta(datoUno, datoDos);
-            case "TRANSFERENCIA":
-                return new PagoTransferencia(datoUno, datoDos);
-            default:
-                return null;
+        if ("EFECTIVO".equalsIgnoreCase(tipo)) {
+            double recibido;
+            try {
+                recibido = Double.parseDouble(datoUno);
+            } catch (NumberFormatException e) {
+                recibido = 0;
+            }
+            return new PagoEfectivo(recibido);
         }
+        return null;
     }
 
     /**
-     * Registra un pago para una factura. Valida el monto y delega la
-     * validacion propia de cada metodo en la implementacion de IMetodoPago.
+     * Registra un pago para una factura. Valida el monto, que no exceda el
+     * saldo pendiente REAL de la factura (consultado aquí mismo, no
+     * recibido como parámetro: antes se podía registrar cualquier monto
+     * porque nadie comparaba contra el total real de la factura), y delega
+     * la validacion propia de cada metodo en la implementacion de
+     * IMetodoPago.
      *
      * @return el objeto Pago ya guardado.
      * @throws Exception si algun dato no es valido.
@@ -66,6 +72,21 @@ public class PagoController {
         if (metodoPago == null) {
             throw new Exception("Debe seleccionar un metodo de pago valido.");
         }
+
+        Factura factura = facturaDAO.obtenerFacturaPorId(idFactura);
+        if (factura == null) {
+            throw new Exception("No existe ninguna factura con el número " + idFactura + ".");
+        }
+        double saldoPendiente = calcularSaldoPendiente(idFactura);
+        if (saldoPendiente <= 0) {
+            throw new Exception("La factura No. " + idFactura + " ya está totalmente pagada.");
+        }
+        if (monto > saldoPendiente + 0.01) {
+            throw new Exception("El monto a pagar (Q" + String.format("%.2f", monto)
+                    + ") no puede ser mayor al saldo pendiente de la factura (Q"
+                    + String.format("%.2f", saldoPendiente) + ").");
+        }
+
         if (!metodoPago.validar(monto)) {
             throw new Exception(metodoPago.getMensajeValidacion());
         }
@@ -106,15 +127,24 @@ public class PagoController {
         return pagoDAO.listarPorFactura(idFactura);
     }
 
-    /** Calcula cuanto falta por pagar de una factura. */
-    public double calcularSaldoPendiente(int idFactura, double totalFactura) {
+    /**
+     * Calcula cuanto falta por pagar de una factura, consultando su total
+     * real en la base de datos (antes había que escribirlo a mano en un
+     * cuadro de diálogo, lo cual era propenso a errores y desconectado del
+     * total verdadero).
+     */
+    public double calcularSaldoPendiente(int idFactura) {
+        Factura factura = facturaDAO.obtenerFacturaPorId(idFactura);
+        if (factura == null) {
+            return 0;
+        }
         double pagado = pagoDAO.totalPagadoPorFactura(idFactura);
-        double saldo = totalFactura - pagado;
+        double saldo = factura.getTotal() - pagado;
         return saldo < 0 ? 0 : saldo;
     }
 
     /** Indica si la factura ya quedo totalmente cancelada. */
-    public boolean facturaEstaSaldada(int idFactura, double totalFactura) {
-        return calcularSaldoPendiente(idFactura, totalFactura) <= 0;
+    public boolean facturaEstaSaldada(int idFactura) {
+        return calcularSaldoPendiente(idFactura) <= 0;
     }
 }

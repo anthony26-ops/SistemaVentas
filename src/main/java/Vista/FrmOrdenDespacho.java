@@ -24,6 +24,7 @@ public class FrmOrdenDespacho extends JInternalFrame {
     private List<DetalleOrdenDespacho> detallesOrdenActual = new ArrayList<>();
 
     private JComboBox<String> cbxOrdenVenta;
+    private JComboBox<modelo.Bodega> cbxBodega;
     private JLabel lblClienteOrden;
     private JTextField txtDireccion;
     private JTextField txtTransportista;
@@ -36,6 +37,15 @@ public class FrmOrdenDespacho extends JInternalFrame {
         initComponents();
         cargarOrdenesPendientes();
         cargarOrdenes();
+        cargarBodegas();
+    }
+
+    /** Carga las bodegas reales para que el usuario elija de dónde sale el despacho. */
+    private void cargarBodegas() {
+        cbxBodega.removeAllItems();
+        for (modelo.Bodega b : controller.listarBodegas()) {
+            cbxBodega.addItem(b);
+        }
     }
 
     private void initComponents() {
@@ -80,6 +90,12 @@ public class FrmOrdenDespacho extends JInternalFrame {
         gbc.gridx = 3; gbc.weightx = 1;
         txtDireccion = new JTextField(25);
         panelEncabezado.add(txtDireccion, gbc);
+
+        gbc.gridx = 0; gbc.gridy = 2; gbc.weightx = 0;
+        panelEncabezado.add(new JLabel("Bodega de origen:"), gbc);
+        gbc.gridx = 1; gbc.weightx = 1;
+        cbxBodega = new JComboBox<>();
+        panelEncabezado.add(cbxBodega, gbc);
 
         add(panelEncabezado, BorderLayout.NORTH);
 
@@ -207,9 +223,18 @@ public class FrmOrdenDespacho extends JInternalFrame {
                     "Datos incompletos", JOptionPane.WARNING_MESSAGE);
             return;
         }
+        modelo.Bodega bodega = (modelo.Bodega) cbxBodega.getSelectedItem();
+        if (bodega == null) {
+            JOptionPane.showMessageDialog(this,
+                    "No hay ninguna bodega registrada. Cree una en el módulo de Bodega/Inventario "
+                    + "antes de despachar.",
+                    "Datos incompletos", JOptionPane.WARNING_MESSAGE);
+            return;
+        }
         try {
             OrdenDespacho orden = controller.crearOrdenDespacho(
                     idOrdenVenta,
+                    bodega.getIdBodega(),
                     txtDireccion.getText(),
                     txtTransportista.getText(),
                     new ArrayList<>(detallesOrdenActual));

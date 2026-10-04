@@ -2,6 +2,7 @@ package dao.impl;
 
 import bd.ConexionException;
 import bd.ConexionMySQL;
+import dao.InventarioDAO;
 import dao.OrdenDespachoDAO;
 import dao.OrdenVentaDAO;
 import dao.ProductoDAO;
@@ -22,8 +23,8 @@ public class OrdenDespachoDAOImpl implements OrdenDespachoDAO {
     @Override
     public boolean insertar(OrdenDespacho orden) {
         String sqlOrden = "INSERT INTO ordenes_despacho "
-                + "(id_orden_venta, fecha_despacho, direccion_entrega, transportista, estado) "
-                + "VALUES (?, ?, ?, ?, ?)";
+                + "(id_orden_venta, bodega_id, fecha_despacho, direccion_entrega, transportista, estado) "
+                + "VALUES (?, ?, ?, ?, ?, ?)";
         String sqlDetalle = "INSERT INTO detalle_orden_despacho "
                 + "(id_orden_despacho, id_producto, nombre_producto, cantidad) "
                 + "VALUES (?, ?, ?, ?)";
@@ -36,10 +37,15 @@ public class OrdenDespachoDAOImpl implements OrdenDespachoDAO {
             int idGenerado;
             try (PreparedStatement ps = cn.prepareStatement(sqlOrden, Statement.RETURN_GENERATED_KEYS)) {
                 ps.setInt(1, orden.getIdOrdenVenta());
-                ps.setTimestamp(2, new Timestamp(orden.getFechaDespacho().getTime()));
-                ps.setString(3, orden.getDireccionEntrega());
-                ps.setString(4, orden.getTransportista());
-                ps.setString(5, orden.getEstado());
+                if (orden.getIdBodega() != null) {
+                    ps.setInt(2, orden.getIdBodega());
+                } else {
+                    ps.setNull(2, Types.INTEGER);
+                }
+                ps.setTimestamp(3, new Timestamp(orden.getFechaDespacho().getTime()));
+                ps.setString(4, orden.getDireccionEntrega());
+                ps.setString(5, orden.getTransportista());
+                ps.setString(6, orden.getEstado());
 
                 if (ps.executeUpdate() == 0) {
                     cn.rollback();
@@ -72,9 +78,9 @@ public class OrdenDespachoDAOImpl implements OrdenDespachoDAO {
             cn.commit();
 
             // Al confirmar el despacho: descontar existencia de cada
-            // producto despachado y marcar la orden de venta como
-            // "Despachada".
-            descontarExistencias(orden.getDetalles());
+            // producto despachado (de la bodega elegida) y marcar la orden
+            // de venta como "Despachada".
+            descontarExistencias(orden.getIdBodega(), orden.getDetalles());
             OrdenVentaDAO ordenVentaDAO = new OrdenVentaDAOImpl();
             ordenVentaDAO.actualizarEstado(orden.getIdOrdenVenta(), "Despachada");
 
@@ -102,12 +108,22 @@ public class OrdenDespachoDAOImpl implements OrdenDespachoDAO {
         }
     }
 
-    private void descontarExistencias(List<DetalleOrdenDespacho> detalles) {
+    /**
+     * Descuenta cada línea del detalle de la bodega real que se eligió al
+     * despachar (tabla ventas_inventario), y además mantiene sincronizado
+     * Producto.existencia (el total cacheado que usan las validaciones
+     * rápidas y el resaltado de "poco stock" en Productos).
+     */
+    private void descontarExistencias(Integer idBodega, List<DetalleOrdenDespacho> detalles) {
         if (detalles == null) {
             return;
         }
         ProductoDAO productoDAO = new ProductoDAOImpl();
+        InventarioDAO inventarioDAO = new InventarioDAOImpl();
         for (DetalleOrdenDespacho detalle : detalles) {
+            if (idBodega != null) {
+                inventarioDAO.descontar(detalle.getIdProducto(), idBodega, detalle.getCantidad());
+            }
             Producto producto = productoDAO.buscarPorId(detalle.getIdProducto());
             if (producto != null) {
                 int nuevaExistencia = Math.max(producto.getExistencia() - detalle.getCantidad(), 0);
@@ -206,6 +222,8 @@ public class OrdenDespachoDAOImpl implements OrdenDespachoDAO {
         OrdenDespacho orden = new OrdenDespacho();
         orden.setIdOrdenDespacho(rs.getInt("id_orden_despacho"));
         orden.setIdOrdenVenta(rs.getInt("id_orden_venta"));
+        int idBodega = rs.getInt("bodega_id");
+        orden.setIdBodega(rs.wasNull() ? null : idBodega);
         orden.setFechaDespacho(rs.getTimestamp("fecha_despacho"));
         orden.setDireccionEntrega(rs.getString("direccion_entrega"));
         orden.setTransportista(rs.getString("transportista"));

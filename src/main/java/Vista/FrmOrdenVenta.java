@@ -19,6 +19,12 @@ public class FrmOrdenVenta extends javax.swing.JInternalFrame {
      */
     public FrmOrdenVenta() {
         initComponents();
+        // El editor visual de NetBeans deja la tabla de detalle con 4 filas
+        // de diseño llenas de null. Si no se limpian aquí, el primer
+        // producto que se agrega queda abajo de esas filas vacías, y al
+        // sumar el total revienta con NullPointerException en la fila null
+        // ("Error al agregar el producto: ... getValueAt(...) is null").
+        ((javax.swing.table.DefaultTableModel) tblDetalles.getModel()).setRowCount(0);
         cargarCombos();
     }
 

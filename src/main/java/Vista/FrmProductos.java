@@ -101,6 +101,7 @@ public class FrmProductos extends javax.swing.JInternalFrame {
         btnLimpiar = new javax.swing.JButton();
         btnActualizar = new javax.swing.JButton();
         btnEliminar = new javax.swing.JButton();
+        btnIngresarStock = new javax.swing.JButton();
         jScrollPane2 = new javax.swing.JScrollPane();
         tblProductos = new javax.swing.JTable();
         cboCategoria = new javax.swing.JComboBox<>();
@@ -192,6 +193,11 @@ public class FrmProductos extends javax.swing.JInternalFrame {
         btnEliminar.addActionListener(this::btnEliminarActionPerformed);
         getContentPane().add(btnEliminar, new org.netbeans.lib.awtextra.AbsoluteConstraints(550, 320, 120, 40));
 
+        btnIngresarStock.setText("Ingresar stock");
+        btnIngresarStock.setToolTipText("Agregar existencia de este producto a una bodega");
+        btnIngresarStock.addActionListener(this::btnIngresarStockActionPerformed);
+        getContentPane().add(btnIngresarStock, new org.netbeans.lib.awtextra.AbsoluteConstraints(680, 320, 150, 40));
+
         tblProductos.setModel(new javax.swing.table.DefaultTableModel(
             new Object [][] {
                 {null, null, null, null},
@@ -257,6 +263,105 @@ public class FrmProductos extends javax.swing.JInternalFrame {
         });
     }
     
+    /**
+     * Pregunta a qué bodega se acredita la existencia inicial de un
+     * producto recién creado (antes nadie preguntaba esto: el número de
+     * "Existencia" quedaba flotando sin pertenecer a ninguna bodega real).
+     */
+    private void acreditarExistenciaInicialEnBodega(int idProducto, int cantidad) {
+        controlador.InventarioController inventarioController = new controlador.InventarioController();
+        java.util.List<modelo.Bodega> bodegas = inventarioController.listarBodegas();
+        if (bodegas.isEmpty()) {
+            javax.swing.JOptionPane.showMessageDialog(this,
+                    "Producto guardado, pero todavía no existe ninguna bodega registrada.\n"
+                    + "Cree una bodega en el módulo de Bodega/Inventario y use \"Ingresar stock\" "
+                    + "para acreditarle estas " + cantidad + " unidades.",
+                    "Sistema de Ventas", javax.swing.JOptionPane.WARNING_MESSAGE);
+            return;
+        }
+        modelo.Bodega bodega = (modelo.Bodega) javax.swing.JOptionPane.showInputDialog(this,
+                "¿En qué bodega quedan las " + cantidad + " unidades iniciales de este producto?",
+                "Bodega de ingreso", javax.swing.JOptionPane.QUESTION_MESSAGE, null,
+                bodegas.toArray(), bodegas.get(0));
+        if (bodega == null) {
+            javax.swing.JOptionPane.showMessageDialog(this,
+                    "Producto guardado, pero la existencia inicial no quedó acreditada en ninguna bodega.\n"
+                    + "Use \"Ingresar stock\" más tarde para registrarla.",
+                    "Sistema de Ventas", javax.swing.JOptionPane.WARNING_MESSAGE);
+            return;
+        }
+        try {
+            inventarioController.acreditar(idProducto, bodega.getIdBodega(), cantidad);
+            javax.swing.JOptionPane.showMessageDialog(this,
+                    "Producto guardado y existencia acreditada en " + bodega.getNombre() + ".");
+        } catch (Exception ex) {
+            javax.swing.JOptionPane.showMessageDialog(this,
+                    "Producto guardado, pero no se pudo acreditar el stock en la bodega: " + ex.getMessage(),
+                    "Error", javax.swing.JOptionPane.ERROR_MESSAGE);
+        }
+    }
+
+    /** Ingresa stock adicional (reabastecimiento) de un producto ya existente a una bodega concreta. */
+    private void btnIngresarStockActionPerformed(java.awt.event.ActionEvent evt) {
+        if (txtId.getText().trim().isEmpty()) {
+            javax.swing.JOptionPane.showMessageDialog(this, "Seleccione un producto de la tabla o escriba su ID.");
+            return;
+        }
+        int idProducto;
+        try {
+            idProducto = Integer.parseInt(txtId.getText().trim());
+        } catch (NumberFormatException ex) {
+            javax.swing.JOptionPane.showMessageDialog(this, "El ID debe ser numérico.",
+                    "Error", javax.swing.JOptionPane.ERROR_MESSAGE);
+            return;
+        }
+        ProductoController productoController = new ProductoController();
+        Producto producto = productoController.buscarPorId(idProducto);
+        if (producto == null) {
+            javax.swing.JOptionPane.showMessageDialog(this, "No existe ningún producto con ese ID.",
+                    "Error", javax.swing.JOptionPane.ERROR_MESSAGE);
+            return;
+        }
+
+        controlador.InventarioController inventarioController = new controlador.InventarioController();
+        java.util.List<modelo.Bodega> bodegas = inventarioController.listarBodegas();
+        if (bodegas.isEmpty()) {
+            javax.swing.JOptionPane.showMessageDialog(this,
+                    "Todavía no existe ninguna bodega registrada. Cree una en el módulo de Bodega/Inventario.",
+                    "Sistema de Ventas", javax.swing.JOptionPane.WARNING_MESSAGE);
+            return;
+        }
+        modelo.Bodega bodega = (modelo.Bodega) javax.swing.JOptionPane.showInputDialog(this,
+                "¿A qué bodega ingresa el stock de \"" + producto.getNombre() + "\"?",
+                "Ingresar stock", javax.swing.JOptionPane.QUESTION_MESSAGE, null,
+                bodegas.toArray(), bodegas.get(0));
+        if (bodega == null) {
+            return;
+        }
+        String cantidadTexto = javax.swing.JOptionPane.showInputDialog(this,
+                "¿Cuántas unidades ingresan a " + bodega.getNombre() + "?", "Ingresar stock",
+                javax.swing.JOptionPane.QUESTION_MESSAGE);
+        if (cantidadTexto == null || cantidadTexto.trim().isEmpty()) {
+            return;
+        }
+        try {
+            int cantidad = Integer.parseInt(cantidadTexto.trim());
+            inventarioController.acreditar(idProducto, bodega.getIdBodega(), cantidad);
+            productoController.actualizarExistencia(idProducto, producto.getExistencia() + cantidad);
+            cargarTabla();
+            javax.swing.JOptionPane.showMessageDialog(this,
+                    "Se ingresaron " + cantidad + " unidades de \"" + producto.getNombre()
+                    + "\" a " + bodega.getNombre() + ".");
+        } catch (NumberFormatException ex) {
+            javax.swing.JOptionPane.showMessageDialog(this, "La cantidad debe ser un número válido.",
+                    "Error", javax.swing.JOptionPane.ERROR_MESSAGE);
+        } catch (Exception ex) {
+            javax.swing.JOptionPane.showMessageDialog(this,
+                    "No se pudo ingresar el stock: " + ex.getMessage(),
+                    "Error", javax.swing.JOptionPane.ERROR_MESSAGE);
+        }
+    }
+
     private void btnNuevaCategoriaActionPerformed(java.awt.event.ActionEvent evt) {
         String nombre = javax.swing.JOptionPane.showInputDialog(this, "Nombre de la categoría:", "Nueva categoría",
                 javax.swing.JOptionPane.PLAIN_MESSAGE);
@@ -335,7 +440,12 @@ public class FrmProductos extends javax.swing.JInternalFrame {
             ProductoController controller = new ProductoController();
             controller.guardar(p);
             cargarTabla();
-            javax.swing.JOptionPane.showMessageDialog(this, "Producto guardado.");
+
+            if (existencia > 0) {
+                acreditarExistenciaInicialEnBodega(id, existencia);
+            } else {
+                javax.swing.JOptionPane.showMessageDialog(this, "Producto guardado.");
+            }
         } catch (NumberFormatException ex) {
             javax.swing.JOptionPane.showMessageDialog(this,
                     "ID, precio y existencia deben ser números válidos.",
@@ -428,6 +538,7 @@ public class FrmProductos extends javax.swing.JInternalFrame {
     // Variables declaration - do not modify//GEN-BEGIN:variables
     private javax.swing.JButton btnActualizar;
     private javax.swing.JButton btnEliminar;
+    private javax.swing.JButton btnIngresarStock;
     private javax.swing.JButton btnGuardar;
     private javax.swing.JButton btnLimpiar;
     private javax.swing.JButton btnNuevaCategoria;

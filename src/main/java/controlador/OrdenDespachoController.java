@@ -1,11 +1,16 @@
 package controlador;
 
+import dao.BodegaDAO;
+import dao.BodegaDAOImpl;
+import dao.InventarioDAO;
 import dao.OrdenDespachoDAO;
 import dao.OrdenVentaDAO;
+import dao.impl.InventarioDAOImpl;
 import dao.impl.OrdenDespachoDAOImpl;
 import dao.impl.OrdenVentaDAOImpl;
 import java.util.Date;
 import java.util.List;
+import modelo.Bodega;
 import modelo.DetalleOrdenDespacho;
 import modelo.OrdenDespacho;
 import modelo.OrdenVenta;
@@ -18,6 +23,8 @@ public class OrdenDespachoController {
 
     private final OrdenDespachoDAO ordenDespachoDAO;
     private final OrdenVentaDAO ordenVentaDAO;
+    private final InventarioDAO inventarioDAO;
+    private final BodegaDAO bodegaDAO;
 
     /** Estados validos por los que puede pasar una orden de despacho. */
     public static final String[] ESTADOS = {"PENDIENTE", "EN RUTA", "ENTREGADA", "CANCELADA"};
@@ -25,6 +32,13 @@ public class OrdenDespachoController {
     public OrdenDespachoController() {
         this.ordenDespachoDAO = new OrdenDespachoDAOImpl();
         this.ordenVentaDAO = new OrdenVentaDAOImpl();
+        this.inventarioDAO = new InventarioDAOImpl();
+        this.bodegaDAO = new BodegaDAOImpl();
+    }
+
+    /** Bodegas disponibles, para que la pantalla pregunte de cuál sale el despacho. */
+    public List<Bodega> listarBodegas() {
+        return bodegaDAO.listar();
     }
 
     /** Órdenes de venta listas para despachar (estado "Pendiente"). */
@@ -42,7 +56,7 @@ public class OrdenDespachoController {
      *
      * @throws Exception si falta informacion obligatoria.
      */
-    public OrdenDespacho crearOrdenDespacho(int idOrdenVenta, String direccionEntrega,
+    public OrdenDespacho crearOrdenDespacho(int idOrdenVenta, int idBodega, String direccionEntrega,
                                             String transportista,
                                             List<DetalleOrdenDespacho> detalles) throws Exception {
         if (idOrdenVenta <= 0) {
@@ -58,6 +72,9 @@ public class OrdenDespachoController {
                     + ordenVenta.getEstado() + "\" y no se puede volver a despachar.");
         }
 
+        if (idBodega <= 0) {
+            throw new Exception("Debe indicar de qué bodega sale el despacho.");
+        }
         if (direccionEntrega == null || direccionEntrega.trim().isEmpty()) {
             throw new Exception("Debe ingresar la direccion de entrega.");
         }
@@ -71,10 +88,17 @@ public class OrdenDespachoController {
             if (detalle.getCantidad() <= 0) {
                 throw new Exception("La cantidad de cada producto debe ser mayor a cero.");
             }
+            int disponibleEnBodega = inventarioDAO.obtenerCantidad(detalle.getIdProducto(), idBodega);
+            if (disponibleEnBodega < detalle.getCantidad()) {
+                throw new Exception("No hay existencia suficiente de \"" + detalle.getNombreProducto()
+                        + "\" en esa bodega. Disponible: " + disponibleEnBodega
+                        + ", solicitado: " + detalle.getCantidad() + ".");
+            }
         }
 
         OrdenDespacho orden = new OrdenDespacho();
         orden.setIdOrdenVenta(idOrdenVenta);
+        orden.setIdBodega(idBodega);
         orden.setFechaDespacho(new Date());
         orden.setDireccionEntrega(direccionEntrega.trim());
         orden.setTransportista(transportista.trim());

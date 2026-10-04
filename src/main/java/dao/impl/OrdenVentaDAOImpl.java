@@ -160,13 +160,24 @@ public class OrdenVentaDAOImpl implements OrdenVentaDAO {
 
     private List<DetalleOrdenVenta> cargarDetalles(Connection con, int idOrden) throws java.sql.SQLException {
         List<DetalleOrdenVenta> detalles = new ArrayList<>();
-        String sql = "SELECT id_producto, cantidad, precio_unitario FROM orden_venta_detalles WHERE id_orden_venta = ?";
+        // Antes solo traía id_producto, cantidad y precio_unitario de
+        // orden_venta_detalles: el Producto quedaba con el nombre en null,
+        // así que cualquier pantalla que mostrara o usara ese nombre (como
+        // Despacho, que lo guarda en detalle_orden_despacho.nombre_producto,
+        // columna NOT NULL) fallaba. Se agrega el JOIN para traer el nombre
+        // real del catálogo.
+        String sql = "SELECT d.id_producto, d.cantidad, d.precio_unitario, p.nombre "
+                + "FROM orden_venta_detalles d "
+                + "LEFT JOIN ventas_productos p ON p.id_producto = d.id_producto "
+                + "WHERE d.id_orden_venta = ?";
         try (PreparedStatement ps = con.prepareStatement(sql)) {
             ps.setInt(1, idOrden);
             try (ResultSet rs = ps.executeQuery()) {
                 while (rs.next()) {
                     Producto producto = new Producto();
                     producto.setIdProducto(rs.getInt("id_producto"));
+                    String nombre = rs.getString("nombre");
+                    producto.setNombre(nombre != null ? nombre : "(producto eliminado del catálogo)");
                     DetalleOrdenVenta detalle = new DetalleOrdenVenta(0, null, producto,
                             rs.getInt("cantidad"), rs.getDouble("precio_unitario"));
                     detalles.add(detalle);

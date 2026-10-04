@@ -55,6 +55,12 @@ public class FrmPago extends JInternalFrame {
         panelFormulario.add(new JLabel("No. de factura:"), gbc);
         gbc.gridx = 1; gbc.weightx = 1;
         txtIdFactura = new JTextField(12);
+        // Al presionar Enter se consulta el saldo real de la factura y se
+        // precarga en "Monto a pagar": antes ese campo se escribía a
+        // ciegas (o pidiéndole el total al usuario en otro diálogo aparte),
+        // sin forma de saber cuál era el monto correcto, lo que llevaba a
+        // escribir montos mayores al saldo real de la factura.
+        txtIdFactura.addActionListener(e -> consultarSaldo());
         panelFormulario.add(txtIdFactura, gbc);
 
         gbc.gridx = 2; gbc.weightx = 0;
@@ -66,8 +72,10 @@ public class FrmPago extends JInternalFrame {
         gbc.gridx = 0; gbc.gridy = 1; gbc.weightx = 0;
         panelFormulario.add(new JLabel("Metodo de pago:"), gbc);
         gbc.gridx = 1; gbc.weightx = 1;
-        cbxMetodo = new JComboBox<>(new String[]{"EFECTIVO", "TARJETA", "TRANSFERENCIA"});
-        cbxMetodo.addActionListener(e -> actualizarCamposMetodo());
+        // Único método disponible por ahora: Tarjeta y Transferencia se
+        // quitaron (no validaban nada real, solo pedían un número sin
+        // comprobarlo contra ningún banco).
+        cbxMetodo = new JComboBox<>(new String[]{"EFECTIVO"});
         panelFormulario.add(cbxMetodo, gbc);
 
         gbc.gridx = 0; gbc.gridy = 2; gbc.weightx = 0;
@@ -128,24 +136,13 @@ public class FrmPago extends JInternalFrame {
         actualizarCamposMetodo();
     }
 
-    /** Cambia las etiquetas segun el metodo de pago seleccionado. */
+    /** Prepara los campos para el único método de pago disponible (Efectivo). */
     private void actualizarCamposMetodo() {
-        String metodo = (String) cbxMetodo.getSelectedItem();
         txtDatoUno.setText("");
         txtDatoDos.setText("");
-        if ("EFECTIVO".equals(metodo)) {
-            lblDatoUno.setText("Monto recibido (Q):");
-            lblDatoDos.setText(" ");
-            txtDatoDos.setEnabled(false);
-        } else if ("TARJETA".equals(metodo)) {
-            lblDatoUno.setText("No. de tarjeta:");
-            lblDatoDos.setText("Titular:");
-            txtDatoDos.setEnabled(true);
-        } else {
-            lblDatoUno.setText("Banco:");
-            lblDatoDos.setText("No. de boleta:");
-            txtDatoDos.setEnabled(true);
-        }
+        lblDatoUno.setText("Monto recibido (Q):");
+        lblDatoDos.setText(" ");
+        txtDatoDos.setEnabled(false);
     }
 
     private void registrarPago() {
@@ -208,27 +205,35 @@ public class FrmPago extends JInternalFrame {
         }
     }
 
+    /**
+     * Consulta el saldo pendiente REAL de la factura (ya no se le pregunta
+     * el total al usuario: se trae directo de la base de datos) y lo
+     * precarga en "Monto a pagar" para que no se pueda escribir, sin
+     * querer, un monto mayor al que realmente se debe.
+     */
     private void consultarSaldo() {
+        String texto = txtIdFactura.getText().trim();
+        if (texto.isEmpty()) {
+            return;
+        }
         try {
-            int idFactura = Integer.parseInt(txtIdFactura.getText().trim());
-            String totalTexto = JOptionPane.showInputDialog(this,
-                    "Total de la factura No. " + idFactura + " (Q):");
-            if (totalTexto == null || totalTexto.trim().isEmpty()) {
-                return;
+            int idFactura = Integer.parseInt(texto);
+            double saldo = controller.calcularSaldoPendiente(idFactura);
+
+            if (controller.facturaEstaSaldada(idFactura)) {
+                txtMonto.setText("");
+                JOptionPane.showMessageDialog(this, "La factura No. " + idFactura + " ya está totalmente pagada.",
+                        "Estado de la factura", JOptionPane.INFORMATION_MESSAGE);
+            } else {
+                txtMonto.setText(String.format("%.2f", saldo));
+                JOptionPane.showMessageDialog(this,
+                        "Saldo pendiente: Q" + String.format("%.2f", saldo)
+                        + "\nSe precargó en \"Monto a pagar\".",
+                        "Estado de la factura", JOptionPane.INFORMATION_MESSAGE);
             }
-            double total = Double.parseDouble(totalTexto.trim());
-            double saldo = controller.calcularSaldoPendiente(idFactura, total);
-
-            String estado = controller.facturaEstaSaldada(idFactura, total)
-                    ? "La factura ya esta totalmente pagada."
-                    : "Saldo pendiente: Q" + String.format("%.2f", saldo);
-
-            JOptionPane.showMessageDialog(this, estado, "Estado de la factura",
-                    JOptionPane.INFORMATION_MESSAGE);
-
         } catch (NumberFormatException ex) {
-            JOptionPane.showMessageDialog(this, "Ingrese valores numericos validos.",
-                    "Datos invalidos", JOptionPane.WARNING_MESSAGE);
+            JOptionPane.showMessageDialog(this, "El número de factura debe ser numérico.",
+                    "Datos inválidos", JOptionPane.WARNING_MESSAGE);
         }
     }
 
