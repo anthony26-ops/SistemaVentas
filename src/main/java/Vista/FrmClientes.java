@@ -291,13 +291,19 @@ public class FrmClientes extends JInternalFrame {
     private void tablaClientesMouseClicked(java.awt.event.MouseEvent evt) {                                           
         int fila = tablaClientes.getSelectedRow();
         if (fila >= 0) {
-            txtId.setText(modeloTabla.getValueAt(fila, 0).toString());
-            txtNombre.setText(modeloTabla.getValueAt(fila, 1).toString());
-            txtApellido.setText(modeloTabla.getValueAt(fila, 2).toString());
-            txtTelefono.setText(modeloTabla.getValueAt(fila, 3).toString());
-            txtEmail.setText(modeloTabla.getValueAt(fila, 4).toString());
-            txtNit.setText(modeloTabla.getValueAt(fila, 5).toString());
+            txtId.setText(textoDeCelda(fila, 0));
+            txtNombre.setText(textoDeCelda(fila, 1));
+            txtApellido.setText(textoDeCelda(fila, 2));
+            txtTelefono.setText(textoDeCelda(fila, 3));
+            txtEmail.setText(textoDeCelda(fila, 4));
+            txtNit.setText(textoDeCelda(fila, 5));
         }
+    }
+
+    /** Texto de una celda; una celda NULL en la base (ej. email viejo) se muestra vacía en vez de lanzar NullPointerException. */
+    private String textoDeCelda(int fila, int columna) {
+        Object valor = modeloTabla.getValueAt(fila, columna);
+        return valor == null ? "" : valor.toString();
     }
 
     // Variables declaration - do not modify//GEN-BEGIN:variables
