@@ -8,7 +8,8 @@ Inventario → Facturación → Pago.
 
 Cada integrante necesita, en su propia máquina:
 
-1. **JDK 26** o superior (el `pom.xml` compila con `maven.compiler.release=26`).
+1. **JDK 17** o superior (el `pom.xml` compila con `maven.compiler.release=17`, así que sirve
+   17, 21, 25, 26, etc.).
 2. **MySQL** instalado y **corriendo** en `127.0.0.1:3306`. Por defecto el proyecto se
    conecta con el usuario `root` y **sin contraseña**. Si tu `root` tiene contraseña (es lo
    normal con el instalador de MySQL en Windows), **no edites el código**: define las
@@ -21,8 +22,10 @@ Cada integrante necesita, en su propia máquina:
 3. **Maven** (si vas a correr el proyecto desde terminal) o **NetBeans** (trae Maven
    integrado, es la forma más simple).
 
-No hace falta crear la base de datos a mano ni correr ningún script `.sql`: el
-programa la crea sola la primera vez que arranca.
+No hace falta crear la base de datos a mano ni correr ningún script `.sql`: **en cada
+arranque el programa verifica si la base `sistema_ventas` y sus tablas existen y crea lo
+que falte** (si ya existen, no toca ni borra ningún dato). Solo necesita que MySQL esté
+corriendo y que el usuario pueda crear bases de datos (`root` puede).
 
 ## Cómo traer el proyecto
 
@@ -63,7 +66,11 @@ Al iniciar, el programa automáticamente:
 
 1. Crea la base de datos `sistema_ventas` si no existe.
 2. Crea todas las tablas necesarias (y actualiza las de una versión anterior).
-3. Abre directamente el menú principal.
+3. **Solo en una instalación nueva** (base recién creada y vacía) carga datos de ejemplo
+   para poder probar el flujo completo sin crear todo a mano: 1 bodega, 1 categoría,
+   1 proveedor, 3 productos con stock, 2 clientes y 1 vendedor. Una base que ya tiene
+   datos nunca recibe datos de ejemplo.
+4. Abre directamente el menú principal.
 
 ## Acceso al sistema
 
@@ -92,7 +99,7 @@ Si algún día se necesita volver a exigir login, basta cambiar una constante en
   y vuelve a abrir el programa.
 - **`UnsupportedClassVersionError` al ejecutar**: estás corriendo el programa con una
   versión de Java más vieja que la que lo compiló. Revisa `java -version` y que
-  apunte a JDK 26+.
+  apunte a JDK 17+.
 - **Puerto 3306 ocupado por otra instancia de MySQL/MariaDB**: detén la otra instancia
   o cambia el `PORT` en `ConexionMySQL.java` (avísale al resto del equipo: es un
   cambio compartido).

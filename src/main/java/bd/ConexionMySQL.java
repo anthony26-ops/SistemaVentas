@@ -64,7 +64,10 @@ public class ConexionMySQL {
     public static void inicializar() throws ConexionException {
         crearBaseDatosSiNoExiste();
         crearTablas();
-        sembrarUsuarioAdmin();
+        boolean instalacionNueva = sembrarUsuarioAdmin();
+        if (instalacionNueva) {
+            sembrarDatosDeEjemplo();
+        }
     }
 
     /**
@@ -425,7 +428,7 @@ public class ConexionMySQL {
      * poder probar el login mientras el resto de módulos no tiene todavía
      * una pantalla de "crear usuario". No hace nada si ya existe.
      */
-    private static void sembrarUsuarioAdmin() throws ConexionException {
+    private static boolean sembrarUsuarioAdmin() throws ConexionException {
         try (Connection conexion = getConnection();
                 Statement stmt = conexion.createStatement()) {
 
@@ -442,10 +445,85 @@ public class ConexionMySQL {
                     "INSERT IGNORE INTO ventas_usuarios (id_usuario, empleado_id, nombre_usuario, contrasena_hash, rol, activo) "
                     + "VALUES (1, 1, 'admin', ?, 'ADMIN', TRUE)")) {
                 ps.setString(1, contrasenaHash);
-                ps.executeUpdate();
+                // INSERT IGNORE devuelve 1 solo si el admin no existía: es la
+                // señal de que esta es la primera vez que corre el sistema.
+                return ps.executeUpdate() > 0;
             }
         } catch (SQLException e) {
             throw new ConexionException("No se pudo crear el usuario admin de prueba", e);
+        }
+    }
+
+    /**
+     * Datos de ejemplo para poder probar el flujo completo (pedido, despacho,
+     * factura, pago) en una instalación NUEVA, sin crear todo a mano. Solo se
+     * llama cuando se acaba de crear el admin (primera ejecución) y se vuelve
+     * a comprobar que no haya ya clientes ni productos: una base con datos
+     * propios nunca se toca.
+     */
+    private static void sembrarDatosDeEjemplo() throws ConexionException {
+        try (Connection conexion = getConnection();
+                Statement stmt = conexion.createStatement()) {
+
+            if (contarFilas(stmt, "clientes") > 0 || contarFilas(stmt, "ventas_productos") > 0) {
+                return;
+            }
+
+            stmt.executeUpdate("INSERT INTO ventas_categorias (nombre, descripcion) "
+                    + "VALUES ('General (ejemplo)', 'Categoria de ejemplo')");
+            int idCategoria = ultimoIdGenerado(stmt);
+            stmt.executeUpdate("INSERT INTO ventas_proveedores (nombre_empresa, telefono, direccion) "
+                    + "VALUES ('Proveedor de ejemplo', '22223333', 'Ciudad de Guatemala')");
+            int idProveedor = ultimoIdGenerado(stmt);
+
+            int idBodega;
+            try (ResultSet rs = stmt.executeQuery("SELECT MIN(id_bodega) FROM ventas_bodegas")) {
+                rs.next();
+                idBodega = rs.getInt(1);
+            }
+            if (idBodega == 0) {
+                stmt.executeUpdate("INSERT INTO ventas_bodegas (nombre, direccion, telefono) "
+                        + "VALUES ('Bodega Principal', 'Sin direccion registrada', '')");
+                idBodega = ultimoIdGenerado(stmt);
+            }
+
+            Object[][] productos = {
+                {1001, "Producto de ejemplo A", 25.00, 50},
+                {1002, "Producto de ejemplo B", 40.00, 30},
+                {1003, "Producto de ejemplo C", 100.00, 20}
+            };
+            for (Object[] p : productos) {
+                stmt.executeUpdate("INSERT INTO ventas_productos "
+                        + "(id_producto, nombre, descripcion, precio, existencia, categoria_id, proveedor_id) VALUES ("
+                        + p[0] + ", '" + p[1] + "', 'Producto de ejemplo', " + p[2] + ", " + p[3] + ", "
+                        + idCategoria + ", " + idProveedor + ")");
+                stmt.executeUpdate("INSERT INTO ventas_inventario (producto_id, bodega_id, cantidad_disponible) "
+                        + "VALUES (" + p[0] + ", " + idBodega + ", " + p[3] + ")");
+            }
+
+            stmt.executeUpdate("INSERT INTO clientes (nombre, apellido, telefono, email, nit) VALUES "
+                    + "('Cliente', 'Ejemplo Uno', '55551111', 'cliente1@ejemplo.com', 'CF'), "
+                    + "('Cliente', 'Ejemplo Dos', '55552222', 'cliente2@ejemplo.com', '1234567-8')");
+            stmt.executeUpdate("INSERT INTO empleados "
+                    + "(nombre, apellido, telefono, email, puesto, salario, tipo_empleado, zona_venta, meta_ventas_mensual) "
+                    + "VALUES ('Vendedor', 'De ejemplo', '55550000', 'vendedor@ejemplo.com', 'Vendedor', 3000, "
+                    + "'VENDEDOR', 'Zona 1', 10000)");
+        } catch (SQLException e) {
+            throw new ConexionException("No se pudieron crear los datos de ejemplo", e);
+        }
+    }
+
+    private static int contarFilas(Statement stmt, String tabla) throws SQLException {
+        try (ResultSet rs = stmt.executeQuery("SELECT COUNT(*) FROM " + tabla)) {
+            rs.next();
+            return rs.getInt(1);
+        }
+    }
+
+    private static int ultimoIdGenerado(Statement stmt) throws SQLException {
+        try (ResultSet rs = stmt.executeQuery("SELECT LAST_INSERT_ID()")) {
+            rs.next();
+            return rs.getInt(1);
         }
     }
 }
