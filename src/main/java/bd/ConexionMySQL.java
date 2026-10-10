@@ -17,11 +17,22 @@ public class ConexionMySQL {
     private static final String HOST = "127.0.0.1";
     private static final int PORT = 3306;
     private static final String DATABASE = "sistema_ventas";
-    private static final String USER = "root";
-    private static final String PASSWORD = "";
+    // Valores por defecto de un MySQL local de desarrollo. Cada quien puede
+    // cambiarlos SIN editar este archivo (y sin conflictos de git) definiendo
+    // las variables de entorno (o propiedades -D) DB_USER y DB_PASSWORD antes de iniciar el programa.
+    private static final String USER = configuracion("DB_USER", "root");
+    private static final String PASSWORD = configuracion("DB_PASSWORD", "");
     private static final String URL = "jdbc:mysql://" + HOST + ":" + PORT + "/" + DATABASE
             + "?useSSL=false&allowPublicKeyRetrieval=true&serverTimezone=UTC";
     private static final String DRIVER = "com.mysql.cj.jdbc.Driver";
+
+    private static String configuracion(String nombre, String porDefecto) {
+        String valor = System.getProperty(nombre);
+        if (valor == null) {
+            valor = System.getenv(nombre);
+        }
+        return valor != null ? valor : porDefecto;
+    }
 
     private ConexionMySQL() {
     }
@@ -196,8 +207,8 @@ public class ConexionMySQL {
                     + "id_empleado INT NOT NULL,"
                     + "total DECIMAL(12,2) NOT NULL,"
                     + "estado VARCHAR(30) NOT NULL DEFAULT 'Pendiente',"
-                    + "CONSTRAINT fk_ov_cliente FOREIGN KEY (id_cliente) REFERENCES clientes(id_cliente),"
-                    + "CONSTRAINT fk_ov_empleado FOREIGN KEY (id_empleado) REFERENCES empleados(id_empleado)"
+                    + "CONSTRAINT fk_ordenes_venta_cliente FOREIGN KEY (id_cliente) REFERENCES clientes(id_cliente),"
+                    + "CONSTRAINT fk_ordenes_venta_empleado FOREIGN KEY (id_empleado) REFERENCES empleados(id_empleado)"
                     + ") ENGINE=InnoDB");
 
             stmt.executeUpdate(
@@ -207,8 +218,8 @@ public class ConexionMySQL {
                     + "id_producto INT NOT NULL,"
                     + "cantidad INT NOT NULL,"
                     + "precio_unitario DECIMAL(12,2) NOT NULL,"
-                    + "CONSTRAINT fk_ovd_orden FOREIGN KEY (id_orden_venta) REFERENCES ordenes_venta(id) ON DELETE CASCADE,"
-                    + "CONSTRAINT fk_ovd_producto FOREIGN KEY (id_producto) REFERENCES ventas_productos(id_producto)"
+                    + "CONSTRAINT fk_ov_detalles_orden FOREIGN KEY (id_orden_venta) REFERENCES ordenes_venta(id) ON DELETE CASCADE,"
+                    + "CONSTRAINT fk_ov_detalles_producto FOREIGN KEY (id_producto) REFERENCES ventas_productos(id_producto)"
                     + ") ENGINE=InnoDB");
 
             stmt.executeUpdate(
@@ -220,9 +231,9 @@ public class ConexionMySQL {
                     + "id_empleado INT NOT NULL,"
                     + "total DECIMAL(12,2) NOT NULL,"
                     + "estado VARCHAR(30) NOT NULL DEFAULT 'Pendiente',"
-                    + "CONSTRAINT fk_factura_orden FOREIGN KEY (id_orden_venta) REFERENCES ordenes_venta(id),"
-                    + "CONSTRAINT fk_factura_cliente FOREIGN KEY (id_cliente) REFERENCES clientes(id_cliente),"
-                    + "CONSTRAINT fk_factura_empleado FOREIGN KEY (id_empleado) REFERENCES empleados(id_empleado)"
+                    + "CONSTRAINT fk_facturas_orden FOREIGN KEY (id_orden_venta) REFERENCES ordenes_venta(id),"
+                    + "CONSTRAINT fk_facturas_cliente FOREIGN KEY (id_cliente) REFERENCES clientes(id_cliente),"
+                    + "CONSTRAINT fk_facturas_empleado FOREIGN KEY (id_empleado) REFERENCES empleados(id_empleado)"
                     + ") ENGINE=InnoDB");
 
             stmt.executeUpdate(
@@ -232,8 +243,8 @@ public class ConexionMySQL {
                     + "id_producto INT NOT NULL,"
                     + "cantidad INT NOT NULL,"
                     + "precio_unitario DECIMAL(12,2) NOT NULL,"
-                    + "CONSTRAINT fk_fd_factura FOREIGN KEY (id_factura) REFERENCES facturas(id) ON DELETE CASCADE,"
-                    + "CONSTRAINT fk_fd_producto FOREIGN KEY (id_producto) REFERENCES ventas_productos(id_producto)"
+                    + "CONSTRAINT fk_fact_detalles_factura FOREIGN KEY (id_factura) REFERENCES facturas(id) ON DELETE CASCADE,"
+                    + "CONSTRAINT fk_fact_detalles_producto FOREIGN KEY (id_producto) REFERENCES ventas_productos(id_producto)"
                     + ") ENGINE=InnoDB");
 
             // -- sección Pago/OrdenDespacho/DetalleOrdenDespacho -- (Oscar)
@@ -250,7 +261,7 @@ public class ConexionMySQL {
                     + "tipo_pago VARCHAR(20) NOT NULL,"
                     + "referencia VARCHAR(100),"
                     + "estado VARCHAR(20) NOT NULL DEFAULT 'COMPLETADO',"
-                    + "CONSTRAINT fk_pago_factura FOREIGN KEY (id_factura) REFERENCES facturas(id)"
+                    + "CONSTRAINT fk_pagos_factura FOREIGN KEY (id_factura) REFERENCES facturas(id)"
                     + ") ENGINE=InnoDB");
 
             stmt.executeUpdate(
@@ -262,8 +273,8 @@ public class ConexionMySQL {
                     + "direccion_entrega VARCHAR(200) NOT NULL,"
                     + "transportista VARCHAR(100),"
                     + "estado VARCHAR(20) NOT NULL DEFAULT 'PENDIENTE',"
-                    + "CONSTRAINT fk_od_orden FOREIGN KEY (id_orden_venta) REFERENCES ordenes_venta(id),"
-                    + "CONSTRAINT fk_od_bodega FOREIGN KEY (bodega_id) REFERENCES ventas_bodegas(id_bodega)"
+                    + "CONSTRAINT fk_ordenes_despacho_orden FOREIGN KEY (id_orden_venta) REFERENCES ordenes_venta(id),"
+                    + "CONSTRAINT fk_ordenes_despacho_bodega FOREIGN KEY (bodega_id) REFERENCES ventas_bodegas(id_bodega)"
                     + ") ENGINE=InnoDB");
 
             stmt.executeUpdate(
@@ -273,7 +284,7 @@ public class ConexionMySQL {
                     + "id_producto INT NOT NULL,"
                     + "nombre_producto VARCHAR(100) NOT NULL,"
                     + "cantidad INT NOT NULL CHECK (cantidad > 0),"
-                    + "CONSTRAINT fk_detalle_despacho_orden FOREIGN KEY (id_orden_despacho) REFERENCES ordenes_despacho(id_orden_despacho) ON DELETE CASCADE"
+                    + "CONSTRAINT fk_det_despacho_orden FOREIGN KEY (id_orden_despacho) REFERENCES ordenes_despacho(id_orden_despacho) ON DELETE CASCADE"
                     + ") ENGINE=InnoDB");
 
             // -- sección Usuario -- (Anthony)
@@ -365,9 +376,17 @@ public class ConexionMySQL {
             stmt.executeUpdate("ALTER TABLE ordenes_despacho ADD COLUMN bodega_id INT NULL");
         } catch (SQLException ignored) {
         }
-        try {
-            stmt.executeUpdate("ALTER TABLE ordenes_despacho ADD CONSTRAINT fk_od_bodega "
-                    + "FOREIGN KEY (bodega_id) REFERENCES ventas_bodegas(id_bodega)");
+        // Solo se agrega la FK si bodega_id todavía no tiene ninguna (las bases
+        // creadas con una versión anterior la traen con otro nombre, y no se
+        // quiere dejar dos llaves iguales).
+        try (ResultSet rsFk = stmt.executeQuery(
+                "SELECT 1 FROM information_schema.KEY_COLUMN_USAGE "
+                + "WHERE TABLE_SCHEMA = DATABASE() AND TABLE_NAME = 'ordenes_despacho' "
+                + "AND COLUMN_NAME = 'bodega_id' AND REFERENCED_TABLE_NAME IS NOT NULL LIMIT 1")) {
+            if (!rsFk.next()) {
+                stmt.executeUpdate("ALTER TABLE ordenes_despacho ADD CONSTRAINT fk_ordenes_despacho_bodega "
+                        + "FOREIGN KEY (bodega_id) REFERENCES ventas_bodegas(id_bodega)");
+            }
         } catch (SQLException ignored) {
         }
 

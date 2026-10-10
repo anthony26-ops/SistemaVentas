@@ -55,8 +55,9 @@ public class FrmMenuPrincipal extends JFrame {
         desktopPane.setBackground(new Color(45, 66, 96));
 
         JLabel lblEstado = new JLabel(
-                " Usuario: " + usuarioActual.getNombreUsuario()
-                + "   |   Rol: " + usuarioActual.getRol());
+                com.mycompany.sistemaventas.SistemaVentas.REQUIERE_LOGIN
+                ? " Usuario: " + usuarioActual.getNombreUsuario() + "   |   Rol: " + usuarioActual.getRol()
+                : " Modo administrador (sin inicio de sesión)");
         lblEstado.setBorder(BorderFactory.createEmptyBorder(4, 8, 4, 8));
 
         JLabel lblBienvenida = new JLabel("Sistema de Ventas", SwingConstants.CENTER);
@@ -83,9 +84,15 @@ public class FrmMenuPrincipal extends JFrame {
         JToolBar toolBar = new JToolBar();
         toolBar.setFloatable(false);
 
-        JButton btnCerrarSesion = new JButton("Cerrar sesión");
-        btnCerrarSesion.addActionListener(e -> cerrarSesion());
-        toolBar.add(btnCerrarSesion);
+        if (com.mycompany.sistemaventas.SistemaVentas.REQUIERE_LOGIN) {
+            JButton btnCerrarSesion = new JButton("Cerrar sesión");
+            btnCerrarSesion.addActionListener(e -> cerrarSesion());
+            toolBar.add(btnCerrarSesion);
+        } else {
+            JButton btnSalir = new JButton("Salir");
+            btnSalir.addActionListener(e -> System.exit(0));
+            toolBar.add(btnSalir);
+        }
 
         getContentPane().add(toolBar, BorderLayout.NORTH);
     }
@@ -108,11 +115,13 @@ public class FrmMenuPrincipal extends JFrame {
         }
 
         JMenu menuSesion = new JMenu("Sesión");
-        JMenuItem itemCerrar = new JMenuItem("Cerrar sesión");
-        itemCerrar.addActionListener(e -> cerrarSesion());
         JMenuItem itemSalir = new JMenuItem("Salir");
         itemSalir.addActionListener(e -> System.exit(0));
-        menuSesion.add(itemCerrar);
+        if (com.mycompany.sistemaventas.SistemaVentas.REQUIERE_LOGIN) {
+            JMenuItem itemCerrar = new JMenuItem("Cerrar sesión");
+            itemCerrar.addActionListener(e -> cerrarSesion());
+            menuSesion.add(itemCerrar);
+        }
         menuSesion.add(itemSalir);
         menuBar.add(menuSesion);
 
