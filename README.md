@@ -27,6 +27,16 @@ arranque el programa verifica si la base `sistema_ventas` y sus tablas existen y
 que falte** (si ya existen, no toca ni borra ningún dato). Solo necesita que MySQL esté
 corriendo y que el usuario pueda crear bases de datos (`root` puede).
 
+### Crear la base a mano (opcional)
+
+Si prefieres no depender del arranque automático, `database/sistema_ventas.sql` crea la
+base, las 16 tablas, el usuario `admin` y datos de ejemplo (la Parte 3 es opcional). Se
+puede ejecutar varias veces sin problema:
+
+```bash
+mysql -uroot -p < database/sistema_ventas.sql
+```
+
 ## Cómo traer el proyecto
 
 ```bash
