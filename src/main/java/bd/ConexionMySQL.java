@@ -20,8 +20,8 @@ public class ConexionMySQL {
     // Valores por defecto de un MySQL local de desarrollo. Cada quien puede
     // cambiarlos SIN editar este archivo (y sin conflictos de git) definiendo
     // las variables de entorno (o propiedades -D) DB_USER y DB_PASSWORD antes de iniciar el programa.
-    private static final String USER = configuracion("DB_USER", "root");
-    private static final String PASSWORD = configuracion("DB_PASSWORD", "");
+    private static final String USER = configuracion("DB_USER","root");
+    private static final String PASSWORD = configuracion("DB_PASSWORD", "Bayonetta141102@.");
     private static final String URL = "jdbc:mysql://" + HOST + ":" + PORT + "/" + DATABASE
             + "?useSSL=false&allowPublicKeyRetrieval=true&serverTimezone=UTC";
     private static final String DRIVER = "com.mysql.cj.jdbc.Driver";
