@@ -9,11 +9,15 @@ Inventario → Facturación → Pago.
 Cada integrante necesita, en su propia máquina:
 
 1. **JDK 26** o superior (el `pom.xml` compila con `maven.compiler.release=26`).
-2. **MySQL** instalado y **corriendo** en `127.0.0.1:3306`, con el usuario `root` y
-   **sin contraseña**. Esa es la credencial que usa el proyecto por defecto
-   (`src/main/java/bd/ConexionMySQL.java`). Si tu `root` local ya tiene contraseña,
-   avisa al grupo antes de probar: hay que ajustar `USER`/`PASSWORD` en ese archivo o
-   quitarle la contraseña a tu usuario `root`.
+2. **MySQL** instalado y **corriendo** en `127.0.0.1:3306`. Por defecto el proyecto se
+   conecta con el usuario `root` y **sin contraseña**. Si tu `root` tiene contraseña (es lo
+   normal con el instalador de MySQL en Windows), **no edites el código**: define las
+   variables de entorno antes de abrir el programa:
+   - Windows: `setx DB_PASSWORD "tu_clave"` (una sola vez; `setx DB_USER "otro_usuario"` si
+     no es `root`), y **cierra y vuelve a abrir NetBeans / la terminal**.
+   - Mac/Linux: `export DB_PASSWORD=tu_clave` y abre NetBeans o el programa **desde esa
+     misma terminal**.
+   - Desde Maven también sirve `-DDB_PASSWORD=tu_clave` en el comando.
 3. **Maven** (si vas a correr el proyecto desde terminal) o **NetBeans** (trae Maven
    integrado, es la forma más simple).
 
@@ -55,36 +59,40 @@ internet para esa única vez.)
 
 ## Primer arranque
 
-Al iniciar por primera vez, el programa automáticamente:
+Al iniciar, el programa automáticamente:
 
 1. Crea la base de datos `sistema_ventas` si no existe.
-2. Crea todas las tablas necesarias.
-3. Crea un usuario administrador de prueba.
+2. Crea todas las tablas necesarias (y actualiza las de una versión anterior).
+3. Abre directamente el menú principal.
 
-## Iniciar sesión
+## Acceso al sistema
 
-En la pantalla de login que aparece al abrir el programa:
+**El sistema ya no pide usuario ni contraseña**: abre directo en el menú principal con
+rol administrador (acceso a todos los módulos). Así nadie queda bloqueado por tener una
+base de datos distinta a la de otro integrante.
 
-| Usuario | Contraseña |
-|---------|------------|
-| `admin` | `admin123` |
-
-Con ese usuario (rol `ADMIN`) tenés acceso a todos los módulos del menú: Clientes,
-Empleados, Productos, Bodega/Inventario, Hacer Pedido, Despacho, Facturación y Pagos.
-
-Los demás roles (`VENDEDOR`, `BODEGA`, `CAJA`) solo ven los módulos que les
-corresponden, pero todavía no hay una pantalla para crear usuarios nuevos desde la
-interfaz — por ahora hay que insertarlos directo en la tabla `ventas_usuarios` (la
-contraseña debe guardarse como hash de BCrypt, no en texto plano).
+Si algún día se necesita volver a exigir login, basta cambiar una constante en
+`SistemaVentas.java`: `REQUIERE_LOGIN = true` (la pantalla de login y la tabla
+`ventas_usuarios` siguen intactas; el usuario de prueba es `admin` / `admin123`).
 
 ## Problemas comunes
 
-- **"No se pudo conectar a sistema_ventas" / `ConexionException`**: MySQL no está
-  corriendo, o está en un puerto distinto a 3306, o tu `root` tiene contraseña.
-  Verificá con `mysqladmin -h127.0.0.1 -uroot ping`.
+- **Al abrir aparece "No se pudo preparar la base de datos MySQL"**: el mensaje trae la
+  causa real. Casos típicos:
+  - `Access denied for user 'root'`: tu `root` tiene contraseña; define `DB_PASSWORD`
+    (ver Requisitos).
+  - `Communications link failure` / `Connection refused`: MySQL no está corriendo o no
+    está en el puerto 3306. Verifica con `mysqladmin -h127.0.0.1 -uroot ping`.
+- **La base quedó a medias o dando errores raros** (por ejemplo, la creaste con una
+  versión muy vieja del proyecto): bórrala y deja que el programa la cree limpia.
+  Se pierden los datos de esa base, que son solo de prueba:
+  ```bash
+  mysql -uroot -p -e "DROP DATABASE IF EXISTS sistema_ventas;"
+  ```
+  y vuelve a abrir el programa.
 - **`UnsupportedClassVersionError` al ejecutar**: estás corriendo el programa con una
-  versión de Java más vieja que la que lo compiló. Revisá `java -version` y que
+  versión de Java más vieja que la que lo compiló. Revisa `java -version` y que
   apunte a JDK 26+.
-- **Puerto 3306 ocupado por otra instancia de MySQL/MariaDB**: detené la otra
-  instancia o cambiá el `PORT` en `ConexionMySQL.java` (pero ahí mismo hay que
-  avisarle al resto del equipo, porque es un cambio compartido).
+- **Puerto 3306 ocupado por otra instancia de MySQL/MariaDB**: detén la otra instancia
+  o cambia el `PORT` en `ConexionMySQL.java` (avísale al resto del equipo: es un
+  cambio compartido).
