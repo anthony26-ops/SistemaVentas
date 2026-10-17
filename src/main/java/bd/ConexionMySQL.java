@@ -20,8 +20,8 @@ public class ConexionMySQL {
     // Valores por defecto de un MySQL local de desarrollo. Cada quien puede
     // cambiarlos SIN editar este archivo (y sin conflictos de git) definiendo
     // las variables de entorno (o propiedades -D) DB_USER y DB_PASSWORD antes de iniciar el programa.
-    private static final String USER = configuracion("DB_USER","root");
-    private static final String PASSWORD = configuracion("DB_PASSWORD", "Bayonetta141102@.");//se debe cambiar la contrasena dependiendo la base de datos local de cada uno
+    private static final String USER = configuracion("DB_USER", "root");
+    private static final String PASSWORD = configuracion("DB_PASSWORD", "");
     private static final String URL = "jdbc:mysql://" + HOST + ":" + PORT + "/" + DATABASE
             + "?useSSL=false&allowPublicKeyRetrieval=true&serverTimezone=UTC";
     private static final String DRIVER = "com.mysql.cj.jdbc.Driver";
@@ -131,6 +131,20 @@ public class ConexionMySQL {
                     + "email VARCHAR(100), "
                     + "nit VARCHAR(20), "
                     + "CONSTRAINT fk_cliente_persona FOREIGN KEY (id_persona) REFERENCES personas(id_persona) ON DELETE CASCADE"
+                    + ") ENGINE=InnoDB");
+
+            // Un cliente puede tener uno o varios telefonos (relacion 1 a N). Antes
+            // era una sola columna clientes.telefono. Los nombres de las restricciones
+            // son unicos en toda la base (una FK repetida en otra tabla hace fallar el
+            // arranque).
+            stmt.executeUpdate(
+                    "CREATE TABLE IF NOT EXISTS telefonos_cliente ("
+                    + "id_telefono INT AUTO_INCREMENT PRIMARY KEY, "
+                    + "id_cliente INT NOT NULL, "
+                    + "numero VARCHAR(20) NOT NULL, "
+                    + "tipo VARCHAR(20) NOT NULL, "
+                    + "CONSTRAINT fk_telefonos_cliente FOREIGN KEY (id_cliente) REFERENCES clientes(id_cliente) ON DELETE CASCADE, "
+                    + "CONSTRAINT uq_telefonos_cliente_numero UNIQUE (id_cliente, numero)"
                     + ") ENGINE=InnoDB");
 
             stmt.executeUpdate(
@@ -307,6 +321,7 @@ public class ConexionMySQL {
 
             migrarColumnasAutoIncrement(stmt);
             migrarInventarioPorBodega(stmt);
+            migrarTelefonosDeClientes(stmt);
         } catch (SQLException e) {
             throw new ConexionException("No se pudieron crear las tablas del sistema", e);
         }
@@ -352,6 +367,28 @@ public class ConexionMySQL {
             stmt.executeUpdate("ALTER TABLE ventas_productos ADD CONSTRAINT fk_producto_proveedor "
                     + "FOREIGN KEY (proveedor_id) REFERENCES ventas_proveedores(id_proveedor)");
         } catch (SQLException ignored) {
+        }
+    }
+
+    /**
+     * Copia a telefonos_cliente (tipo "Personal") el telefono unico que los clientes
+     * ya existentes tenian en la columna clientes.telefono, y despues limpia esa
+     * columna para que los telefonos vivan en un solo lugar. Es repetible: solo copia
+     * clientes que aun no tienen ningun telefono nuevo, y como la columna vieja queda
+     * en NULL, un telefono que el usuario borre despues no "resucita" en el siguiente
+     * arranque. La columna clientes.telefono se conserva en el esquema (no se borra).
+     */
+    private static void migrarTelefonosDeClientes(Statement stmt) {
+        try {
+            stmt.executeUpdate("INSERT INTO telefonos_cliente (id_cliente, numero, tipo) "
+                    + "SELECT c.id_cliente, TRIM(c.telefono), 'Personal' FROM clientes c "
+                    + "WHERE c.telefono IS NOT NULL AND TRIM(c.telefono) <> '' "
+                    + "AND NOT EXISTS (SELECT 1 FROM telefonos_cliente t WHERE t.id_cliente = c.id_cliente)");
+            stmt.executeUpdate("UPDATE clientes c SET c.telefono = NULL "
+                    + "WHERE c.telefono IS NOT NULL "
+                    + "AND EXISTS (SELECT 1 FROM telefonos_cliente t WHERE t.id_cliente = c.id_cliente)");
+        } catch (SQLException ignored) {
+            // si falla, el siguiente arranque lo reintenta
         }
     }
 
@@ -501,9 +538,16 @@ public class ConexionMySQL {
                         + "VALUES (" + p[0] + ", " + idBodega + ", " + p[3] + ")");
             }
 
-            stmt.executeUpdate("INSERT INTO clientes (nombre, apellido, telefono, email, nit) VALUES "
-                    + "('Cliente', 'Ejemplo Uno', '55551111', 'cliente1@ejemplo.com', 'CF'), "
-                    + "('Cliente', 'Ejemplo Dos', '55552222', 'cliente2@ejemplo.com', '1234567-8')");
+            stmt.executeUpdate("INSERT INTO clientes (nombre, apellido, email, nit) "
+                    + "VALUES ('Cliente', 'Ejemplo Uno', 'cliente1@ejemplo.com', 'CF')");
+            int idCliente1 = ultimoIdGenerado(stmt);
+            stmt.executeUpdate("INSERT INTO clientes (nombre, apellido, email, nit) "
+                    + "VALUES ('Cliente', 'Ejemplo Dos', 'cliente2@ejemplo.com', '1234567-8')");
+            int idCliente2 = ultimoIdGenerado(stmt);
+            stmt.executeUpdate("INSERT INTO telefonos_cliente (id_cliente, numero, tipo) VALUES "
+                    + "(" + idCliente1 + ", '55551111', 'Personal'), "
+                    + "(" + idCliente1 + ", '22223333', 'Trabajo'), "
+                    + "(" + idCliente2 + ", '55552222', 'Casa')");
             stmt.executeUpdate("INSERT INTO empleados "
                     + "(nombre, apellido, telefono, email, puesto, salario, tipo_empleado, zona_venta, meta_ventas_mensual) "
                     + "VALUES ('Vendedor', 'De ejemplo', '55550000', 'vendedor@ejemplo.com', 'Vendedor', 3000, "

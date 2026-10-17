@@ -6,8 +6,13 @@ package Vista;
 
 import controlador.ClienteController;
 import modelo.Cliente;
+import modelo.Telefono;
+import modelo.TipoTelefono;
 import javax.swing.*;
 import javax.swing.table.DefaultTableModel;
+import java.awt.BorderLayout;
+import java.awt.FlowLayout;
+import java.util.ArrayList;
 import java.util.List;
 
 public class FrmClientes extends JInternalFrame {
@@ -15,16 +20,28 @@ public class FrmClientes extends JInternalFrame {
     private ClienteController controller;
     private DefaultTableModel modeloTabla;
 
+    // Teléfonos del cliente que se está registrando o editando (uno o varios).
+    // Viven en memoria hasta que se pulsa Guardar/Actualizar.
+    private final List<Telefono> telefonosEnEdicion = new ArrayList<>();
+    private DefaultTableModel modeloTelefonos;
+    private JTable tblTelefonos;
+    private JComboBox<TipoTelefono> cbxTipoTelefono;
+    private JTextField txtNumeroTelefono;
+
     public FrmClientes() {
         initComponents();
+        construirPanelTelefonos();
         controller = new ClienteController();
         configurarTabla();
         cargarTabla();
     }
 
     private void configurarTabla() {
-        modeloTabla = new DefaultTableModel(new String[]{"ID", "Nombre", "Apellido", "Teléfono", "Email", "NIT"}, 0);
+        modeloTabla = new DefaultTableModel(new String[]{"ID", "Nombre", "Apellido", "Teléfonos", "Email", "NIT"}, 0);
         tablaClientes.setModel(modeloTabla);
+        // La columna de teléfonos muestra varios ("55551111 (Personal), 22223333 (Trabajo)"): más ancha.
+        tablaClientes.getColumnModel().getColumn(0).setPreferredWidth(40);
+        tablaClientes.getColumnModel().getColumn(3).setPreferredWidth(300);
         // Sin este listener, hacer clic en una fila no cargaba nada en el
         // formulario: como txtId está deshabilitado, no había forma de
         // indicar qué cliente actualizar o eliminar.
@@ -42,7 +59,7 @@ public class FrmClientes extends JInternalFrame {
         if (clientes != null) {
             for (Cliente c : clientes) {
                 modeloTabla.addRow(new Object[]{
-                    c.getIdCliente(), c.getNombre(), c.getApellido(), c.getTelefono(), c.getEmail(), c.getNit()
+                    c.getIdCliente(), c.getNombre(), c.getApellido(), c.getTelefonosResumen(), c.getEmail(), c.getNit()
                 });
             }
         }
@@ -52,9 +69,168 @@ public class FrmClientes extends JInternalFrame {
         txtId.setText("");
         txtNombre.setText("");
         txtApellido.setText("");
-        txtTelefono.setText("");
         txtEmail.setText("");
         txtNit.setText("");
+        telefonosEnEdicion.clear();
+        refrescarTablaTelefonos();
+        limpiarEntradaTelefono();
+    }
+
+    /**
+     * Reemplaza, dentro del layout generado por el Diseñador, el campo de texto del
+     * teléfono único (txtTelefono) por un panel para trabajar con VARIOS teléfonos:
+     * tipo + número + botones Agregar/Modificar/Quitar + una tabla con la lista.
+     * Se hace por código, después de initComponents(), para no tocar el bloque
+     * "Generated Code" ni el archivo .form (así el Diseñador sigue funcionando).
+     */
+    private void construirPanelTelefonos() {
+        cbxTipoTelefono = new JComboBox<>(TipoTelefono.values());
+        txtNumeroTelefono = new JTextField(14);
+
+        modeloTelefonos = new DefaultTableModel(new String[]{"Número", "Tipo"}, 0) {
+            @Override
+            public boolean isCellEditable(int fila, int columna) {
+                return false;
+            }
+        };
+        tblTelefonos = new JTable(modeloTelefonos);
+        tblTelefonos.setSelectionMode(ListSelectionModel.SINGLE_SELECTION);
+        JScrollPane scroll = new JScrollPane(tblTelefonos);
+        scroll.setPreferredSize(new java.awt.Dimension(260, 72));
+        // Al seleccionar un teléfono de la lista, sus datos pasan a los campos para poder modificarlo.
+        tblTelefonos.getSelectionModel().addListSelectionListener(e -> {
+            int fila = tblTelefonos.getSelectedRow();
+            if (!e.getValueIsAdjusting() && fila >= 0 && fila < telefonosEnEdicion.size()) {
+                Telefono t = telefonosEnEdicion.get(fila);
+                cbxTipoTelefono.setSelectedItem(t.getTipo());
+                txtNumeroTelefono.setText(t.getNumero());
+            }
+        });
+
+        JButton btnAgregarTel = new JButton("Agregar");
+        JButton btnModificarTel = new JButton("Modificar");
+        JButton btnQuitarTel = new JButton("Quitar");
+        btnAgregarTel.addActionListener(e -> agregarTelefono());
+        btnModificarTel.addActionListener(e -> modificarTelefonoSeleccionado());
+        btnQuitarTel.addActionListener(e -> quitarTelefonoSeleccionado());
+
+        JPanel fila = new JPanel(new FlowLayout(FlowLayout.LEFT, 4, 0));
+        fila.add(cbxTipoTelefono);
+        fila.add(txtNumeroTelefono);
+        JPanel botones = new JPanel(new FlowLayout(FlowLayout.LEFT, 4, 0));
+        botones.add(btnAgregarTel);
+        botones.add(btnModificarTel);
+        botones.add(btnQuitarTel);
+
+        JPanel panel = new JPanel(new BorderLayout(0, 4));
+        panel.add(fila, BorderLayout.NORTH);
+        panel.add(scroll, BorderLayout.CENTER);
+        panel.add(botones, BorderLayout.SOUTH);
+
+        GroupLayout layout = (GroupLayout) getContentPane().getLayout();
+        layout.replace(txtTelefono, panel);
+        jLabel5.setText("Teléfonos :");
+        jLabel5.setVerticalAlignment(SwingConstants.TOP);
+        pack();
+    }
+
+    private void agregarTelefono() {
+        try {
+            Telefono t = controller.crearTelefonoValidado(txtNumeroTelefono.getText(),
+                    (TipoTelefono) cbxTipoTelefono.getSelectedItem(), telefonosEnEdicion);
+            telefonosEnEdicion.add(t);
+            refrescarTablaTelefonos();
+            limpiarEntradaTelefono();
+            txtNumeroTelefono.requestFocusInWindow();
+        } catch (Exception ex) {
+            JOptionPane.showMessageDialog(this, ex.getMessage(), "Teléfono no válido", JOptionPane.WARNING_MESSAGE);
+        }
+    }
+
+    private void modificarTelefonoSeleccionado() {
+        int fila = tblTelefonos.getSelectedRow();
+        if (fila < 0) {
+            JOptionPane.showMessageDialog(this, "Seleccione en la lista el teléfono que desea modificar.");
+            return;
+        }
+        try {
+            // Los repetidos se buscan entre los DEMÁS teléfonos (no contra sí mismo).
+            List<Telefono> otros = new ArrayList<>(telefonosEnEdicion);
+            otros.remove(fila);
+            Telefono t = controller.crearTelefonoValidado(txtNumeroTelefono.getText(),
+                    (TipoTelefono) cbxTipoTelefono.getSelectedItem(), otros);
+            telefonosEnEdicion.set(fila, t);
+            refrescarTablaTelefonos();
+            limpiarEntradaTelefono();
+        } catch (Exception ex) {
+            JOptionPane.showMessageDialog(this, ex.getMessage(), "Teléfono no válido", JOptionPane.WARNING_MESSAGE);
+        }
+    }
+
+    private void quitarTelefonoSeleccionado() {
+        int fila = tblTelefonos.getSelectedRow();
+        if (fila < 0) {
+            JOptionPane.showMessageDialog(this, "Seleccione en la lista el teléfono que desea quitar.");
+            return;
+        }
+        telefonosEnEdicion.remove(fila);
+        refrescarTablaTelefonos();
+        limpiarEntradaTelefono();
+    }
+
+    private void refrescarTablaTelefonos() {
+        if (modeloTelefonos == null) {
+            return;
+        }
+        modeloTelefonos.setRowCount(0);
+        for (Telefono t : telefonosEnEdicion) {
+            modeloTelefonos.addRow(new Object[]{t.getNumero(), t.getTipo()});
+        }
+    }
+
+    private void limpiarEntradaTelefono() {
+        if (txtNumeroTelefono == null) {
+            return;
+        }
+        txtNumeroTelefono.setText("");
+        cbxTipoTelefono.setSelectedIndex(0);
+        tblTelefonos.clearSelection();
+    }
+
+    /**
+     * Si el usuario escribió un número y pulsó Guardar sin pulsar "Agregar", ese número
+     * se agrega solo (para que no se pierda en silencio). Si hay un teléfono seleccionado
+     * con cambios sin aplicar, se avisa en vez de descartarlos.
+     *
+     * @return true si se puede continuar con el guardado.
+     */
+    private boolean agregarTelefonoPendiente() {
+        String numero = txtNumeroTelefono.getText().trim();
+        if (numero.isEmpty()) {
+            return true;
+        }
+        int sel = tblTelefonos.getSelectedRow();
+        if (sel >= 0) {
+            Telefono t = telefonosEnEdicion.get(sel);
+            boolean sinCambios = t.getNumero().equals(numero) && t.getTipo() == cbxTipoTelefono.getSelectedItem();
+            if (sinCambios) {
+                return true;
+            }
+            JOptionPane.showMessageDialog(this,
+                    "Tiene cambios sin aplicar en el teléfono seleccionado.\nPulse \"Modificar\" para aplicarlos "
+                    + "o quite la selección antes de guardar.", "Teléfono pendiente", JOptionPane.WARNING_MESSAGE);
+            return false;
+        }
+        try {
+            telefonosEnEdicion.add(controller.crearTelefonoValidado(numero,
+                    (TipoTelefono) cbxTipoTelefono.getSelectedItem(), telefonosEnEdicion));
+            refrescarTablaTelefonos();
+            limpiarEntradaTelefono();
+            return true;
+        } catch (Exception ex) {
+            JOptionPane.showMessageDialog(this, ex.getMessage(), "Teléfono no válido", JOptionPane.WARNING_MESSAGE);
+            return false;
+        }
     }
     /**
      * This method is called from within the constructor to initialize the form.
@@ -245,20 +421,32 @@ public class FrmClientes extends JInternalFrame {
             JOptionPane.showMessageDialog(this, "Complete al menos nombre y apellido.");
             return;
        }
-       if (controller.guardarCliente(txtNombre.getText(), txtApellido.getText(), txtTelefono.getText(), txtEmail.getText(), txtNit.getText())) {
-            JOptionPane.showMessageDialog(this, "Cliente guardado exitosamente.");
-            cargarTabla();
-            limpiarCampos();
-       } else {
-            JOptionPane.showMessageDialog(this, "No se pudo guardar el cliente.", "Error", JOptionPane.ERROR_MESSAGE);
+       if (!agregarTelefonoPendiente()) {
+            return;
+       }
+       try {
+            if (controller.guardarCliente(txtNombre.getText(), txtApellido.getText(), txtEmail.getText(), txtNit.getText(),
+                    new ArrayList<>(telefonosEnEdicion))) {
+                JOptionPane.showMessageDialog(this, "Cliente guardado exitosamente.");
+                cargarTabla();
+                limpiarCampos();
+            } else {
+                JOptionPane.showMessageDialog(this, "No se pudo guardar el cliente.", "Error", JOptionPane.ERROR_MESSAGE);
+            }
+       } catch (Exception ex) {
+            JOptionPane.showMessageDialog(this, ex.getMessage(), "No se pudo guardar el cliente", JOptionPane.WARNING_MESSAGE);
        }
     }//GEN-LAST:event_btnGuardarActionPerformed
 
     private void btnActualizarActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_btnActualizarActionPerformed
         if (txtId.getText().isEmpty()) return;
+        if (!agregarTelefonoPendiente()) {
+            return;
+        }
         try {
             int id = Integer.parseInt(txtId.getText().trim());
-            if (controller.modificarCliente(id, txtNombre.getText(), txtApellido.getText(), txtTelefono.getText(), txtEmail.getText(), txtNit.getText())) {
+            if (controller.modificarCliente(id, txtNombre.getText(), txtApellido.getText(), txtEmail.getText(), txtNit.getText(),
+                    new ArrayList<>(telefonosEnEdicion))) {
                 JOptionPane.showMessageDialog(this, "Cliente actualizado.");
                 cargarTabla();
                 limpiarCampos();
@@ -267,6 +455,8 @@ public class FrmClientes extends JInternalFrame {
             }
         } catch (NumberFormatException ex) {
             JOptionPane.showMessageDialog(this, "El ID debe ser numérico.", "Error", JOptionPane.ERROR_MESSAGE);
+        } catch (Exception ex) {
+            JOptionPane.showMessageDialog(this, ex.getMessage(), "No se pudo actualizar el cliente", JOptionPane.WARNING_MESSAGE);
         }
     }//GEN-LAST:event_btnActualizarActionPerformed
 
@@ -291,12 +481,22 @@ public class FrmClientes extends JInternalFrame {
     private void tablaClientesMouseClicked(java.awt.event.MouseEvent evt) {                                           
         int fila = tablaClientes.getSelectedRow();
         if (fila >= 0) {
-            txtId.setText(textoDeCelda(fila, 0));
-            txtNombre.setText(textoDeCelda(fila, 1));
-            txtApellido.setText(textoDeCelda(fila, 2));
-            txtTelefono.setText(textoDeCelda(fila, 3));
-            txtEmail.setText(textoDeCelda(fila, 4));
-            txtNit.setText(textoDeCelda(fila, 5));
+            int id = Integer.parseInt(textoDeCelda(fila, 0));
+            // Se vuelve a consultar el cliente en la base de datos: trae también todos
+            // sus teléfonos (esto es lo que demuestra que quedaron persistidos).
+            Cliente c = controller.obtenerCliente(id);
+            if (c == null) {
+                return;
+            }
+            txtId.setText(String.valueOf(c.getIdCliente()));
+            txtNombre.setText(valorONada(c.getNombre()));
+            txtApellido.setText(valorONada(c.getApellido()));
+            txtEmail.setText(valorONada(c.getEmail()));
+            txtNit.setText(valorONada(c.getNit()));
+            telefonosEnEdicion.clear();
+            telefonosEnEdicion.addAll(c.getTelefonos());
+            refrescarTablaTelefonos();
+            limpiarEntradaTelefono();
         }
     }
 
@@ -304,6 +504,10 @@ public class FrmClientes extends JInternalFrame {
     private String textoDeCelda(int fila, int columna) {
         Object valor = modeloTabla.getValueAt(fila, columna);
         return valor == null ? "" : valor.toString();
+    }
+
+    private String valorONada(String valor) {
+        return valor == null ? "" : valor;
     }
 
     // Variables declaration - do not modify//GEN-BEGIN:variables
