@@ -30,7 +30,7 @@ corriendo y que el usuario pueda crear bases de datos (`root` puede).
 ### Crear la base a mano (opcional)
 
 Si prefieres no depender del arranque automático, `database/sistema_ventas.sql` crea la
-base, las 16 tablas, el usuario `admin` y datos de ejemplo (la Parte 3 es opcional). Se
+base, las 17 tablas, el usuario `admin` y datos de ejemplo (la Parte 3 es opcional). Se
 puede ejecutar varias veces sin problema:
 
 ```bash

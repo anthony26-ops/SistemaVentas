@@ -49,6 +49,17 @@ CREATE TABLE IF NOT EXISTS `clientes` (
   CONSTRAINT `fk_cliente_persona` FOREIGN KEY (`id_persona`) REFERENCES `personas` (`id_persona`) ON DELETE CASCADE
 ) ENGINE=InnoDB;
 
+-- Telefonos de los clientes (un cliente tiene uno o varios; se borran en cascada con el cliente)
+CREATE TABLE IF NOT EXISTS `telefonos_cliente` (
+  `id_telefono` int NOT NULL AUTO_INCREMENT,
+  `id_cliente` int NOT NULL,
+  `numero` varchar(20) NOT NULL,
+  `tipo` varchar(20) NOT NULL,
+  PRIMARY KEY (`id_telefono`),
+  UNIQUE KEY `uq_telefonos_cliente_numero` (`id_cliente`,`numero`),
+  CONSTRAINT `fk_telefonos_cliente` FOREIGN KEY (`id_cliente`) REFERENCES `clientes` (`id_cliente`) ON DELETE CASCADE
+) ENGINE=InnoDB;
+
 -- Empleados y vendedores (tipo_empleado = GENERAL | VENDEDOR)
 CREATE TABLE IF NOT EXISTS `empleados` (
   `id_empleado` int NOT NULL AUTO_INCREMENT,
@@ -257,7 +268,7 @@ VALUES (1, 1, 'admin', '$2a$10$TPCXyARwvD9jJr9vW4wJ9O6L1Y/1mhkLJcsehR3I16GRZFoei
 -- =====================================================================
 --  PARTE 3: DATOS DE EJEMPLO (opcional) - los mismos que carga el programa
 --  en una instalacion nueva: 1 bodega, 1 categoria, 1 proveedor, 3 productos
---  con stock, 2 clientes y 1 vendedor.
+--  con stock, 2 clientes (con sus telefonos) y 1 vendedor.
 -- =====================================================================
 INSERT IGNORE INTO ventas_bodegas (id_bodega, nombre, direccion, telefono)
 VALUES (1, 'Bodega Principal', 'Sin direccion registrada', '');
@@ -276,9 +287,12 @@ INSERT IGNORE INTO ventas_productos (id_producto, nombre, descripcion, precio, e
 INSERT IGNORE INTO ventas_inventario (producto_id, bodega_id, cantidad_disponible) VALUES
  (1001, 1, 50), (1002, 1, 30), (1003, 1, 20);
 
-INSERT IGNORE INTO clientes (id_cliente, nombre, apellido, telefono, email, nit) VALUES
- (1, 'Cliente', 'Ejemplo Uno', '55551111', 'cliente1@ejemplo.com', 'CF'),
- (2, 'Cliente', 'Ejemplo Dos', '55552222', 'cliente2@ejemplo.com', '1234567-8');
+INSERT IGNORE INTO clientes (id_cliente, nombre, apellido, email, nit) VALUES
+ (1, 'Cliente', 'Ejemplo Uno', 'cliente1@ejemplo.com', 'CF'),
+ (2, 'Cliente', 'Ejemplo Dos', 'cliente2@ejemplo.com', '1234567-8');
+
+INSERT IGNORE INTO telefonos_cliente (id_cliente, numero, tipo) VALUES
+ (1, '55551111', 'Personal'), (1, '22223333', 'Trabajo'), (2, '55552222', 'Casa');
 
 INSERT IGNORE INTO empleados (id_empleado, nombre, apellido, telefono, email, puesto, salario, tipo_empleado, zona_venta, meta_ventas_mensual)
 VALUES (2, 'Vendedor', 'De ejemplo', '55550000', 'vendedor@ejemplo.com', 'Vendedor', 3000, 'VENDEDOR', 'Zona 1', 10000);
