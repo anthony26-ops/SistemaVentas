@@ -1,0 +1,3 @@
+/build
+# Datos de conexion de cada maquina (pueden llevar contrasena): nunca al repositorio
+/src/main/assets/db.properties

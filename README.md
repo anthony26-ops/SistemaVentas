@@ -92,6 +92,17 @@ Si algún día se necesita volver a exigir login, basta cambiar una constante en
 `SistemaVentas.java`: `REQUIERE_LOGIN = true` (la pantalla de login y la tabla
 `ventas_usuarios` siguen intactas; el usuario de prueba es `admin` / `admin123`).
 
+## Aplicación Android
+
+La carpeta `android/` contiene la app móvil (Kotlin) para tomar pedidos desde el teléfono. Usa
+**la misma base de datos** `sistema_ventas`: un pedido hecho en el teléfono aparece en el módulo
+**Despacho** del escritorio y sigue el flujo normal (despacho, factura, pago). Se abre con
+Android Studio; el detalle de cómo ejecutarla, cómo configurar la conexión y sus limitaciones
+está en [`android/README.md`](android/README.md).
+
+Para que la app funcione, el programa de escritorio debe haberse abierto al menos una vez con
+esta versión (agrega las columnas `metodo_pago` y `observaciones` a `ordenes_venta`).
+
 ## Problemas comunes
 
 - **Al abrir aparece "No se pudo preparar la base de datos MySQL"**: el mensaje trae la
