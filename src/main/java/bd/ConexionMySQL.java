@@ -224,6 +224,9 @@ public class ConexionMySQL {
                     + "id_empleado INT NOT NULL,"
                     + "total DECIMAL(12,2) NOT NULL,"
                     + "estado VARCHAR(30) NOT NULL DEFAULT 'Pendiente',"
+                    // Las llena la app Android al registrar un pedido; opcionales para los pedidos del escritorio.
+                    + "metodo_pago VARCHAR(30) NULL,"
+                    + "observaciones VARCHAR(255) NULL,"
                     + "CONSTRAINT fk_ordenes_venta_cliente FOREIGN KEY (id_cliente) REFERENCES clientes(id_cliente),"
                     + "CONSTRAINT fk_ordenes_venta_empleado FOREIGN KEY (id_empleado) REFERENCES empleados(id_empleado)"
                     + ") ENGINE=InnoDB");
@@ -322,6 +325,7 @@ public class ConexionMySQL {
             migrarColumnasAutoIncrement(stmt);
             migrarInventarioPorBodega(stmt);
             migrarTelefonosDeClientes(stmt);
+            migrarCamposMovilEnOrdenesVenta(stmt);
         } catch (SQLException e) {
             throw new ConexionException("No se pudieron crear las tablas del sistema", e);
         }
@@ -366,6 +370,23 @@ public class ConexionMySQL {
         try {
             stmt.executeUpdate("ALTER TABLE ventas_productos ADD CONSTRAINT fk_producto_proveedor "
                     + "FOREIGN KEY (proveedor_id) REFERENCES ventas_proveedores(id_proveedor)");
+        } catch (SQLException ignored) {
+        }
+    }
+
+    /**
+     * La app Android (carpeta android/) guarda cada pedido con dos datos que esta tabla no
+     * tenia: el metodo de pago elegido y las observaciones. Se agregan como columnas
+     * opcionales (NULL) para que los pedidos hechos en el escritorio sigan igual. Es
+     * repetible: si la columna ya existe, el ALTER falla en silencio.
+     */
+    private static void migrarCamposMovilEnOrdenesVenta(Statement stmt) {
+        try {
+            stmt.executeUpdate("ALTER TABLE ordenes_venta ADD COLUMN metodo_pago VARCHAR(30) NULL");
+        } catch (SQLException ignored) {
+        }
+        try {
+            stmt.executeUpdate("ALTER TABLE ordenes_venta ADD COLUMN observaciones VARCHAR(255) NULL");
         } catch (SQLException ignored) {
         }
     }
