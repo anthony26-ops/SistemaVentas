@@ -9,8 +9,8 @@ import android.widget.ListView
 import android.widget.TextView
 import android.widget.Toast
 import androidx.appcompat.app.AppCompatActivity
-import java.sql.Connection
-import java.sql.Statement
+import org.json.JSONArray
+import org.json.JSONObject
 import java.text.SimpleDateFormat
 import java.util.Date
 import java.util.Locale
@@ -77,7 +77,7 @@ class MainActivity : AppCompatActivity() {
         adapterDetalles = ArrayAdapter(this, android.R.layout.simple_list_item_1, listaVisual)
         listaDetallesView.adapter = adapterDetalles
 
-        // Agregar detalle usando el precio dinámico de la BD
+        // Agregar detalle usando el precio dinámico del catálogo
         btnAgregarDetalle.setOnClickListener {
             val seleccion = spinnerProductos.text.toString()
             val cantidadStr = txtCantidad.text.toString()
@@ -115,58 +115,48 @@ class MainActivity : AppCompatActivity() {
         }
 
         btnGenerarPedido.setOnClickListener {
-            guardarPedidoEnBD()
+            guardarPedido()
         }
     }
 
     override fun onResume() {
         super.onResume()
-        // Carga los datos más recientes de la BD cada vez que la pantalla se muestra
-        cargarDatosDesdeBD()
+        // Carga los datos más recientes del sistema cada vez que la pantalla se muestra
+        cargarCatalogos()
     }
 
-    private fun cargarDatosDesdeBD() {
+    private fun cargarCatalogos() {
         executor.execute {
             try {
-                val conn: Connection = Db.conectar(this@MainActivity)
-
                 // 1. Cargar Clientes
-                val stmtClientes = conn.createStatement()
-                val rsClientes = stmtClientes.executeQuery("SELECT id_cliente, nombre, apellido FROM clientes ORDER BY nombre ASC")
+                val clientes = Api.obtenerLista("/clientes")
                 val tempClientes = mutableListOf<String>()
-                while (rsClientes.next()) {
-                    val id = rsClientes.getInt("id_cliente")
-                    val nombre = rsClientes.getString("nombre")
-                    val apellido = rsClientes.getString("apellido")
-                    tempClientes.add("$id - $nombre $apellido")
+                for (i in 0 until clientes.length()) {
+                    val c = clientes.getJSONObject(i)
+                    tempClientes.add("${c.getInt("id")} - ${c.getString("nombre")} ${c.getString("apellido")}")
                 }
 
                 // 2. Cargar Vendedores/Empleados
-                val stmtEmpleados = conn.createStatement()
-                val rsEmpleados = stmtEmpleados.executeQuery("SELECT id_empleado, nombre, apellido FROM empleados ORDER BY nombre ASC")
+                val empleados = Api.obtenerLista("/empleados")
                 val tempVendedores = mutableListOf<String>()
-                while (rsEmpleados.next()) {
-                    val id = rsEmpleados.getInt("id_empleado")
-                    val nombre = rsEmpleados.getString("nombre")
-                    val apellido = rsEmpleados.getString("apellido")
-                    tempVendedores.add("$id - $nombre $apellido")
+                for (i in 0 until empleados.length()) {
+                    val e = empleados.getJSONObject(i)
+                    tempVendedores.add("${e.getInt("id")} - ${e.getString("nombre")} ${e.getString("apellido")}")
                 }
 
                 // 3. Cargar Productos y Precios
-                val stmtProductos = conn.createStatement()
-                val rsProductos = stmtProductos.executeQuery("SELECT id_producto, nombre, precio FROM ventas_productos ORDER BY nombre ASC")
+                val productos = Api.obtenerLista("/productos")
                 val tempProductosStr = mutableListOf<String>()
                 val tempProductosMap = mutableMapOf<Int, ProductoInfo>()
-                while (rsProductos.next()) {
-                    val id = rsProductos.getInt("id_producto")
-                    val nombre = rsProductos.getString("nombre")
-                    val precio = rsProductos.getDouble("precio")
+                for (i in 0 until productos.length()) {
+                    val p = productos.getJSONObject(i)
+                    val id = p.getInt("id")
+                    val nombre = p.getString("nombre")
+                    val precio = p.getDouble("precio")
 
                     tempProductosStr.add("$id - $nombre (Q$precio)")
                     tempProductosMap[id] = ProductoInfo(id, nombre, precio)
                 }
-
-                conn.close()
 
                 // Actualizar la interfaz en el hilo principal
                 runOnUiThread {
@@ -194,7 +184,7 @@ class MainActivity : AppCompatActivity() {
         }
     }
 
-    private fun guardarPedidoEnBD() {
+    private fun guardarPedido() {
         val clienteSeleccionado = spinnerClientes.text.toString()
         val vendedorSeleccionado = spinnerVendedores.text.toString()
         val pagoSeleccionado = spinnerPago.text.toString()
@@ -205,45 +195,35 @@ class MainActivity : AppCompatActivity() {
             return
         }
 
-        val idCliente = clienteSeleccionado.split(" - ")[0].toInt()
-        val idVendedor = vendedorSeleccionado.split(" - ")[0].toInt()
+        val idCliente = clienteSeleccionado.split(" - ")[0].toIntOrNull()
+        val idVendedor = vendedorSeleccionado.split(" - ")[0].toIntOrNull()
+        if (idCliente == null || idVendedor == null) {
+            Toast.makeText(this, "Elige el cliente y el vendedor de la lista", Toast.LENGTH_LONG).show()
+            return
+        }
+
+        // Solo se mandan ids y cantidades: el precio y el total los calcula la API con el catálogo.
+        val productos = JSONArray()
+        for (detalle in detallesGuardados) {
+            productos.put(JSONObject().put("idProducto", detalle.idProducto).put("cantidad", detalle.cantidad))
+        }
+        val pedido = JSONObject()
+            .put("idCliente", idCliente)
+            .put("idEmpleado", idVendedor)
+            .put("metodoPago", pagoSeleccionado)
+            .put("observaciones", observaciones)
+            .put("productos", productos)
 
         executor.execute {
             try {
-                val conn: Connection = Db.conectar(this@MainActivity)
-                conn.autoCommit = false
-
-                val sqlOrden = "INSERT INTO ordenes_venta (fecha, id_cliente, id_empleado, total, estado, metodo_pago, observaciones) VALUES (CURRENT_DATE(), ?, ?, ?, 'Pendiente', ?, ?)"
-                val psOrden = conn.prepareStatement(sqlOrden, Statement.RETURN_GENERATED_KEYS)
-                psOrden.setInt(1, idCliente)
-                psOrden.setInt(2, idVendedor)
-                psOrden.setDouble(3, totalPedido)
-                psOrden.setString(4, pagoSeleccionado)
-                psOrden.setString(5, observaciones)
-                psOrden.executeUpdate()
-
-                val rs = psOrden.generatedKeys
-                var idOrdenGenerada = -1
-                if (rs.next()) {
-                    idOrdenGenerada = rs.getInt(1)
-                }
-
-                val sqlDetalle = "INSERT INTO orden_venta_detalles (id_orden_venta, id_producto, cantidad, precio_unitario) VALUES (?, ?, ?, ?)"
-                val psDetalle = conn.prepareStatement(sqlDetalle)
-
-                for (detalle in detallesGuardados) {
-                    psDetalle.setInt(1, idOrdenGenerada)
-                    psDetalle.setInt(2, detalle.idProducto)
-                    psDetalle.setInt(3, detalle.cantidad)
-                    psDetalle.setDouble(4, detalle.precio)
-                    psDetalle.executeUpdate()
-                }
-
-                conn.commit()
-                conn.close()
+                val guardado = Api.enviarPedido(pedido)
 
                 runOnUiThread {
-                    Toast.makeText(this@MainActivity, "¡Pedido de Q$totalPedido guardado!", Toast.LENGTH_LONG).show()
+                    Toast.makeText(
+                        this@MainActivity,
+                        "¡Pedido #${guardado.getInt("id")} de Q${guardado.getDouble("total")} guardado!",
+                        Toast.LENGTH_LONG
+                    ).show()
                     limpiarFormulario()
                 }
 

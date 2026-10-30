@@ -5,7 +5,6 @@ import android.widget.ArrayAdapter
 import android.widget.ListView
 import android.widget.Toast
 import androidx.appcompat.app.AppCompatActivity
-import java.sql.Connection
 import java.util.concurrent.Executors
 
 class HistorialActivity : AppCompatActivity() {
@@ -29,27 +28,24 @@ class HistorialActivity : AppCompatActivity() {
     private fun cargarHistorial() {
         executor.execute {
             try {
-                val conn: Connection = Db.conectar(this@HistorialActivity)
-
-                // Extraemos las órdenes desde MySQL de la más nueva a la más vieja
-                val sql = "SELECT id, fecha, total, metodo_pago FROM ordenes_venta ORDER BY id DESC"
-                val stmt = conn.createStatement()
-                val rs = stmt.executeQuery(sql)
-
-                while (rs.next()) {
-                    val id = rs.getInt("id")
-                    val fecha = rs.getString("fecha")
-                    val total = rs.getDouble("total")
-                    val pago = rs.getString("metodo_pago") ?: "No especificado"
+                // La API entrega los pedidos de la más nueva a la más vieja
+                val pedidos = Api.obtenerLista("/pedidos")
+                val filas = mutableListOf<String>()
+                for (i in 0 until pedidos.length()) {
+                    val p = pedidos.getJSONObject(i)
+                    val pago = p.optString("metodoPago", "No especificado")
 
                     // Formateamos cómo se verá cada fila en la pantalla
-                    val infoOrden = "Orden #$id - Fecha: $fecha\nTotal: Q$total | Pago: $pago"
-                    listaOrdenes.add(infoOrden)
+                    filas.add(
+                        "Orden #${p.getInt("id")} - Fecha: ${p.getString("fecha")}\n" +
+                            "Total: Q${p.getDouble("total")} | Pago: $pago\n" +
+                            "Estado: ${p.getString("estado")}"
+                    )
                 }
 
-                conn.close()
-
                 runOnUiThread {
+                    listaOrdenes.clear()
+                    listaOrdenes.addAll(filas)
                     adapter.notifyDataSetChanged()
                     if (listaOrdenes.isEmpty()) {
                         Toast.makeText(this@HistorialActivity, "No hay órdenes registradas", Toast.LENGTH_SHORT).show()

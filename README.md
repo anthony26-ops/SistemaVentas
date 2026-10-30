@@ -92,16 +92,21 @@ Si algún día se necesita volver a exigir login, basta cambiar una constante en
 `SistemaVentas.java`: `REQUIERE_LOGIN = true` (la pantalla de login y la tabla
 `ventas_usuarios` siguen intactas; el usuario de prueba es `admin` / `admin123`).
 
-## Aplicación Android
+## Aplicación Android y API REST
 
-La carpeta `android/` contiene la app móvil (Kotlin) para tomar pedidos desde el teléfono. Usa
-**la misma base de datos** `sistema_ventas`: un pedido hecho en el teléfono aparece en el módulo
-**Despacho** del escritorio y sigue el flujo normal (despacho, factura, pago). Se abre con
-Android Studio; el detalle de cómo ejecutarla, cómo configurar la conexión y sus limitaciones
-está en [`android/README.md`](android/README.md).
+La carpeta `android/` contiene la app móvil (Kotlin) para tomar pedidos desde el teléfono. El
+teléfono se conecta **por cable USB** a una **API REST** (`src/main/java/api/ServidorApi.java`) que
+corre en el computador y usa la misma base `sistema_ventas`: un pedido hecho en el teléfono aparece
+en el módulo **Despacho** del escritorio y sigue el flujo normal (despacho, factura, pago).
 
-Para que la app funcione, el programa de escritorio debe haberse abierto al menos una vez con
-esta versión (agrega las columnas `metodo_pago` y `observaciones` a `ordenes_venta`).
+Para levantar la API (escucha solo en `127.0.0.1:8090`; Maven descarga Gson la primera vez):
+
+```bash
+mvn -q compile org.codehaus.mojo:exec-maven-plugin:3.6.3:java -Dexec.mainClass=api.ServidorApi
+```
+
+y con el teléfono conectado: `adb reverse tcp:8090 tcp:8090`. Los pasos completos, los endpoints y
+las limitaciones están en [`android/README.md`](android/README.md).
 
 ## Problemas comunes
 

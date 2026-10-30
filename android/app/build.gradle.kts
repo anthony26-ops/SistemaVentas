@@ -34,7 +34,6 @@ android {
 }
 
 dependencies {
-    implementation("mysql:mysql-connector-java:5.1.49")
     implementation(libs.androidx.activity.ktx)
     implementation(libs.androidx.appcompat)
     implementation(libs.androidx.constraintlayout)
