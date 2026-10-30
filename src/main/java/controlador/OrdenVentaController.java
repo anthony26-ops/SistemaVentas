@@ -8,7 +8,9 @@ import dao.ProductoDAOImpl;
 import dao.impl.ClienteDAOImpl;
 import dao.impl.EmpleadoDAOImpl;
 import dao.impl.OrdenVentaDAOImpl;
+import java.util.ArrayList;
 import java.util.List;
+import java.util.Map;
 import modelo.Cliente;
 import modelo.DetalleOrdenVenta;
 import modelo.Empleado;
@@ -83,8 +85,65 @@ public class OrdenVentaController {
             throw new Exception("El pedido debe tener al menos un producto.");
         }
 
-        // Paso 4 del flujo obligatorio: validar que exista inventario
-        // suficiente para los productos solicitados, ANTES de crear la orden.
+        validarExistencias(detalles);
+        return ordenDAO.registrarOrden(nuevaOrden(idCliente, idEmpleado, detalles, estado, fecha));
+    }
+
+    /**
+     * Pedido que llega de la app Android a través de la API REST. Recibe solo ids y
+     * cantidades: el precio sale SIEMPRE del catálogo (nunca de lo que mande el
+     * teléfono) y el total lo calcula este método. Devuelve la orden ya guardada,
+     * con su id, en estado Pendiente (queda lista para el Despacho del escritorio).
+     */
+    public OrdenVenta crearPedidoMovil(int idCliente, int idEmpleado, Map<Integer, Integer> cantidades,
+            String metodoPago, String observaciones) throws Exception {
+        if (cantidades == null || cantidades.isEmpty()) {
+            throw new Exception("El pedido debe tener al menos un producto.");
+        }
+        if (clienteDAO.obtenerPorId(idCliente) == null) {
+            throw new Exception("El cliente " + idCliente + " no existe.");
+        }
+        if (empleadoDAO.obtenerPorId(idEmpleado) == null) {
+            throw new Exception("El vendedor " + idEmpleado + " no existe.");
+        }
+        if (metodoPago == null || metodoPago.trim().isEmpty()) {
+            throw new Exception("Indique el método de pago.");
+        }
+        if (metodoPago.length() > 30) {
+            throw new Exception("El método de pago no puede pasar de 30 caracteres.");
+        }
+        if (observaciones != null && observaciones.length() > 255) {
+            throw new Exception("Las observaciones no pueden pasar de 255 caracteres.");
+        }
+
+        List<DetalleOrdenVenta> detalles = new ArrayList<>();
+        for (Map.Entry<Integer, Integer> linea : cantidades.entrySet()) {
+            int cantidad = linea.getValue() == null ? 0 : linea.getValue();
+            if (cantidad <= 0) {
+                throw new Exception("La cantidad del producto " + linea.getKey() + " debe ser mayor a cero.");
+            }
+            Producto producto = productoDAO.buscarPorId(linea.getKey());
+            if (producto == null) {
+                throw new Exception("El producto " + linea.getKey() + " no existe en el catálogo.");
+            }
+            detalles.add(new DetalleOrdenVenta(0, null, producto, cantidad, producto.getPrecio()));
+        }
+        validarExistencias(detalles);
+
+        OrdenVenta orden = nuevaOrden(idCliente, idEmpleado, detalles, "Pendiente", new java.util.Date());
+        orden.setMetodoPago(metodoPago.trim());
+        orden.setObservaciones(observaciones == null || observaciones.trim().isEmpty() ? null : observaciones.trim());
+        if (!ordenDAO.registrarOrden(orden)) {
+            throw new IllegalStateException("No se pudo guardar el pedido en la base de datos.");
+        }
+        return orden;
+    }
+
+    /**
+     * Paso 4 del flujo obligatorio: validar que exista inventario suficiente
+     * para los productos solicitados, ANTES de crear la orden.
+     */
+    private void validarExistencias(List<DetalleOrdenVenta> detalles) throws Exception {
         for (DetalleOrdenVenta d : detalles) {
             Producto producto = productoDAO.buscarPorId(d.getProducto().getIdProducto());
             if (producto == null) {
@@ -95,7 +154,10 @@ public class OrdenVentaController {
                         + "Disponible: " + producto.getExistencia() + ", solicitado: " + d.getCantidad() + ".");
             }
         }
+    }
 
+    private OrdenVenta nuevaOrden(int idCliente, int idEmpleado, List<DetalleOrdenVenta> detalles, String estado,
+            java.util.Date fecha) {
         double total = 0;
         for (DetalleOrdenVenta d : detalles) {
             total += d.getSubtotal();
@@ -115,8 +177,7 @@ public class OrdenVentaController {
         orden.setTotal(total);
         orden.setEstado(estado);
         orden.setDetalles(detalles);
-
-        return ordenDAO.registrarOrden(orden);
+        return orden;
     }
 
     public List<OrdenVenta> listarPendientes() {
