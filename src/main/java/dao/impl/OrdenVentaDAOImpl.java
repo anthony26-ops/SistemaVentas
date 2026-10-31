@@ -23,8 +23,7 @@ public class OrdenVentaDAOImpl implements OrdenVentaDAO {
      */
     @Override
     public boolean registrarOrden(OrdenVenta orden) {
-        String sql = "INSERT INTO ordenes_venta (fecha, id_cliente, id_empleado, total, estado, metodo_pago, observaciones) "
-                + "VALUES (?, ?, ?, ?, ?, ?, ?)";
+        String sql = "INSERT INTO ordenes_venta (fecha, id_cliente, id_empleado, total, estado) VALUES (?, ?, ?, ?, ?)";
 
         try (Connection con = ConexionMySQL.getConnection()) {
             con.setAutoCommit(false);
@@ -36,8 +35,6 @@ public class OrdenVentaDAOImpl implements OrdenVentaDAO {
                 ps.setInt(3, orden.getEmpleado() != null ? orden.getEmpleado().getId() : 0);
                 ps.setDouble(4, orden.getTotal());
                 ps.setString(5, orden.getEstado());
-                ps.setString(6, orden.getMetodoPago());
-                ps.setString(7, orden.getObservaciones());
                 if (ps.executeUpdate() == 0) {
                     return false;
                 }
@@ -158,8 +155,6 @@ public class OrdenVentaDAOImpl implements OrdenVentaDAO {
 
         orden.setTotal(rs.getDouble("total"));
         orden.setEstado(rs.getString("estado"));
-        orden.setMetodoPago(rs.getString("metodo_pago"));
-        orden.setObservaciones(rs.getString("observaciones"));
         return orden;
     }
 

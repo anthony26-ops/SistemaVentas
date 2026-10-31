@@ -11,9 +11,6 @@ public class OrdenVenta {
     private List<DetalleOrdenVenta> detalles;
     private double total;
     private String estado;
-    // Las llena la app Android; en los pedidos hechos desde el escritorio quedan en null.
-    private String metodoPago;
-    private String observaciones;
     
     public OrdenVenta() {
     }
@@ -47,11 +44,5 @@ public class OrdenVenta {
     
     public String getEstado() { return estado; }
     public void setEstado(String estado) { this.estado = estado; }
-
-    public String getMetodoPago() { return metodoPago; }
-    public void setMetodoPago(String metodoPago) { this.metodoPago = metodoPago; }
-
-    public String getObservaciones() { return observaciones; }
-    public void setObservaciones(String observaciones) { this.observaciones = observaciones; }
     
 }

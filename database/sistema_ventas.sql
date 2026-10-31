@@ -133,7 +133,7 @@ CREATE TABLE IF NOT EXISTS `ventas_inventario` (
   CONSTRAINT `fk_inventario_producto` FOREIGN KEY (`producto_id`) REFERENCES `ventas_productos` (`id_producto`)
 ) ENGINE=InnoDB;
 
--- Ordenes de venta (estado: Pendiente -> Despachada -> Facturada). metodo_pago y observaciones las llena la app Android
+-- Ordenes de venta (estado: Pendiente -> Despachada -> Facturada)
 CREATE TABLE IF NOT EXISTS `ordenes_venta` (
   `id` int NOT NULL AUTO_INCREMENT,
   `fecha` date NOT NULL,
@@ -141,8 +141,6 @@ CREATE TABLE IF NOT EXISTS `ordenes_venta` (
   `id_empleado` int NOT NULL,
   `total` decimal(12,2) NOT NULL,
   `estado` varchar(30) NOT NULL DEFAULT 'Pendiente',
-  `metodo_pago` varchar(30) DEFAULT NULL,
-  `observaciones` varchar(255) DEFAULT NULL,
   PRIMARY KEY (`id`),
   KEY `fk_ordenes_venta_cliente` (`id_cliente`),
   KEY `fk_ordenes_venta_empleado` (`id_empleado`),
